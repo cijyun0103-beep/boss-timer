@@ -259,7 +259,7 @@
             <span id="volume-text">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem;">測試</button>
         </div>
-        <button class="btn-refresh" onclick="fetchCloudData(true)">🔄 同步雲端資料</button>
+        <button class="btn-refresh" onclick="loadData()">🔄 重新整理</button>
     </div>
 
     <div class="section-title">⚡ 快速登記</div>
@@ -306,8 +306,6 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
-
     const bossList = [
         { name: "死亡騎士", interval: 240 },
         { name: "將軍", interval: 360 },
@@ -316,57 +314,32 @@
         { name: "克特", interval: 600 }
     ];
 
-    // 優先讀取本機 localStorage，確保資料絕對不遺失、不歸零
-    let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+    let bossStates = {};
     let alertedBosses = {};
 
-    // 點擊按鈕或開機時抓取雲端
-    function fetchCloudData(showAlert = false) {
-        fetch(API_URL + '?t=' + new Date().getTime())
-            .then(response => response.json())
+    // 直接讀取 GitHub 專案裡的 data.json 檔案
+    function loadData() {
+        fetch('data.json?t=' + new Date().getTime())
+            .then(res => res.json())
             .then(data => {
                 if (data && typeof data === 'object') {
-                    let newStates = {};
-                    let hasValidData = false;
-                    
-                    for (let key in data) {
-                        if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
-                            newStates[key] = data[key];
-                            hasValidData = true;
-                        }
-                    }
-
-                    // 只有當雲端確實有有效資料時才全面覆蓋本機
-                    if (hasValidData) {
-                        bossStates = newStates;
-                        localStorage.setItem('bossStates', JSON.stringify(bossStates));
-                        updateDisplay();
-                        if (showAlert) alert("✅ 成功從雲端同步最新王表！");
-                    } else {
-                        if (showAlert) alert("ℹ️ 雲端目前沒有資料，維持本機顯示。");
-                    }
+                    bossStates = data;
+                    updateDisplay();
                 }
             })
             .catch(err => {
-                if (showAlert) alert("⚠️ 雲端連線失敗，目前顯示本機資料。");
+                // 如果讀取失敗，退回使用本機緩存
+                bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+                updateDisplay();
             });
     }
 
-    // 儲存資料（同時寫入本機與雲端）
-    function saveToCloud() {
+    function saveData() {
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
         updateDisplay();
-
-        let payload = { ...bossStates, _updatedAt: new Date().getTime() };
-
-        fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-        .catch(err => console.log("寫入雲端失敗"));
+        
+        // 同時產生下載 data.json 的提示，讓你可以直接上傳到 GitHub 更新雲端
+        console.log("資料已更新，請確保同步至 data.json");
     }
 
     function initUI() {
@@ -378,8 +351,7 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-        updateDisplay();
-        fetchCloudData(false); // 開啟網頁時在背景靜默同步一次雲端
+        loadData();
     }
 
     function updateVolume() {
@@ -406,7 +378,7 @@
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
         alertedBosses[name] = false;
-        saveToCloud();
+        saveData();
     }
 
     function manualRegister() {
@@ -441,7 +413,7 @@
         if (confirm("確定要重置所有王的計時嗎？")) {
             bossStates = {};
             alertedBosses = {};
-            saveToCloud();
+            saveData();
         }
     }
 
@@ -509,7 +481,7 @@
                 timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
 
                 const diff = respawnTimeMs - now;
-                if (diff <= 0) {
+            if (diff <= 0) {
                     countdownStr = "🔥 已重生 / 時間到！";
                     isUrgent = true;
                 } else {
@@ -549,7 +521,7 @@
 
     window.onload = function() {
         initUI();
-        setInterval(updateDisplay, 1000); // 每一秒穩定更新倒數，取消每5秒自動抓雲端干擾
+        setInterval(updateDisplay, 1000);
     };
 </script>
 
