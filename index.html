@@ -184,26 +184,16 @@
             margin-top: 4px;
         }
 
-        /* 專門針對手機版的排版調整（PC版完全不受影響） */
+        /* 手機版排版：取消舊的亂序 order，確保自然往下排 */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
             .mobile-cards { display: flex !important; }
 
-            .container {
-                display: flex;
-                flex-direction: column;
-            }
-
-            h2 { order: 1 !important; }
-            .top-bar { order: 2 !important; justify-content: space-between; }
-            .section-title:nth-of-type(1) { order: 3 !important; }
-            
             .btn-group {
                 display: flex !important;
                 flex-wrap: wrap !important;
                 gap: 8px !important;
-                order: 4 !important;
             }
             .btn-group button {
                 flex: 1 1 calc(33.333% - 6px) !important;
@@ -222,14 +212,11 @@
                 min-width: calc(50% - 4px) !important;
             }
 
-            .section-title:nth-of-type(2) { order: 5 !important; }
-            
             .manual-section {
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: stretch !important;
                 gap: 8px !important;
-                order: 6 !important;
             }
             .manual-section select, 
             .manual-section input, 
@@ -237,20 +224,13 @@
                 width: 100% !important;
                 box-sizing: border-box !important;
             }
-
-            .section-title:nth-of-type(3) { order: 7 !important; }
-            .mobile-cards { order: 8 !important; }
-
-            .btn-danger {
-                order: 9 !important;
-                margin-top: 15px !important;
-            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 💡 標題直接放最上面，手機跟電腦都會第一個顯示 -->
     <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.2</span></h2>
 
     <div class="top-bar">
