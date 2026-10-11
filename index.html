@@ -21,7 +21,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
         }
 
@@ -29,13 +29,13 @@
             max-width: 900px;
             margin: 0 auto;
             background: var(--card-bg);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         h2 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             margin-top: 0;
             text-align: center;
             border-bottom: 1px solid var(--border-color);
@@ -43,31 +43,30 @@
         }
 
         .section-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
-            margin: 20px 0 10px 0;
+            margin: 15px 0 8px 0;
             color: #93c5fd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .btn-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         button {
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 10px 14px;
             font-size: 1rem;
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
+            flex: 1 1 calc(33% - 8px);
+            min-width: 90px;
         }
 
         button:active {
@@ -80,7 +79,8 @@
 
         .btn-danger {
             background-color: var(--danger-color);
-            margin-top: 10px;
+            flex: 1 1 100%;
+            margin-top: 5px;
         }
         .btn-danger:hover {
             background-color: var(--danger-hover);
@@ -88,12 +88,17 @@
 
         .manual-section {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             background: #252525;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             margin-bottom: 15px;
-            align-items: center;
+        }
+
+        .manual-row {
+            display: flex;
+            gap: 8px;
         }
 
         select, input {
@@ -103,8 +108,21 @@
             padding: 10px;
             font-size: 1rem;
             border-radius: 6px;
+            flex: 1;
         }
 
+        .settings-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        /* 預設電腦版表格 */
         .desktop-table {
             width: 100%;
             border-collapse: collapse;
@@ -112,55 +130,101 @@
         }
 
         .desktop-table th, .desktop-table td {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
 
         .desktop-table th {
             background-color: #2a2a2a;
         }
 
-        .settings-bar {
+        /* 預設隱藏手機卡片 */
+        .mobile-cards {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .boss-card {
+            background: #262626;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
             display: flex;
-            gap: 15px;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .boss-card-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #60a5fa;
+        }
+
+        .boss-card-info {
+            display: flex;
+            justify-content: space-between;
             font-size: 0.9rem;
-            background: #1a1a1a;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
+            color: #b0b0b0;
+        }
+
+        .boss-card-countdown {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #f87171;
+            margin-top: 4px;
+        }
+
+        /* 螢幕小於 768px（手機）時自動切換為卡片 */
+        @media screen and (max-width: 768px) {
+            .desktop-table {
+                display: none !important;
+            }
+            .mobile-cards {
+                display: flex !important;
+            }
+            button {
+                padding: 12px;
+                font-size: 1.05rem;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表控制台</h2>
+    <h2>⚔️ 天堂M 王表系統</h2>
 
     <!-- 音效控制列 -->
     <div class="settings-bar">
-        <label>🔊 提示音量：</label>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()">
+        <label>🔊 音量：</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()" style="flex:1;">
         <span id="volume-text">50%</span>
-        <button onclick="testAudio()" style="padding: 4px 10px; font-size: 0.85rem;">測試聲音</button>
+        <button onclick="testAudio()" style="padding: 6px 10px; font-size: 0.85rem; flex: unset;">測試</button>
     </div>
 
-    <div class="section-title">⚡ 快速登記（點擊直接以當下時間計算）</div>
+    <div class="section-title">⚡ 快速登記</div>
     <div class="btn-group" id="quick-buttons"></div>
 
     <div class="section-title">手動補登</div>
     <div class="manual-section">
-        <select id="boss-select"></select>
-        <input type="text" id="manual-time" placeholder="例如 0354 (或 1435)">
+        <div class="manual-row">
+            <select id="boss-select"></select>
+            <input type="text" id="manual-time" placeholder="例如 0354">
+        </div>
         <button onclick="manualRegister()">登記擊殺 (K)</button>
     </div>
 
     <button class="btn-danger" onclick="resetAll()">全部重置</button>
 
-    <div class="section-title" style="margin-top: 25px;">📊 王表現況</div>
+    <div class="section-title" style="margin-top: 20px;">📊 王表現況</div>
     
+    <!-- 電腦版表格 -->
     <table class="desktop-table">
         <thead>
             <tr>
@@ -172,9 +236,11 @@
         </thead>
         <tbody id="boss-table-body"></tbody>
     </table>
+
+    <!-- 手機版卡片 -->
+    <div class="mobile-cards" id="boss-cards-container"></div>
 </div>
 
-<!-- 提示音效來源 -->
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
@@ -187,7 +253,7 @@
     ];
 
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
-    let alertedBosses = {}; // 避免時間到時重複狂響
+    let alertedBosses = {};
 
     function initUI() {
         const quickDiv = document.getElementById('quick-buttons');
@@ -207,7 +273,6 @@
             select.appendChild(option);
         });
 
-        // 初始化音量
         const slider = document.getElementById('volume-slider');
         const savedVol = localStorage.getItem('alarmVolume');
         if (savedVol !== null) {
@@ -215,7 +280,6 @@
             document.getElementById('volume-text').innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-
         updateDisplay();
     }
 
@@ -230,9 +294,7 @@
     function testAudio() {
         const audio = document.getElementById('alarm-sound');
         audio.currentTime = 0;
-        audio.play().catch(e => {
-            alert("請先在網頁任意處點擊一下（解鎖瀏覽器音效權限），再測試聲音！");
-        });
+        audio.play().catch(e => alert("請先在畫面任意處點擊一下解鎖音效！"));
     }
 
     function registerBoss(name, date) {
@@ -241,7 +303,7 @@
 
         const respawnTime = new Date(date.getTime() + boss.interval * 60000);
         bossStates[name] = respawnTime.getTime();
-        alertedBosses[name] = false; // 重設警報狀態
+        alertedBosses[name] = false;
         saveAndRefresh();
     }
 
@@ -284,9 +346,11 @@
 
     function updateDisplay() {
         const tbody = document.getElementById('boss-table-body');
-        if (!tbody) return;
+        const cardsContainer = document.getElementById('boss-cards-container');
+        if (!tbody || !cardsContainer) return;
         
         tbody.innerHTML = '';
+        cardsContainer.innerHTML = '';
         const now = new Date().getTime();
         let needPlayAlarm = false;
 
@@ -304,8 +368,6 @@
                 if (diff <= 0) {
                     countdownStr = "🔥 已重生 / 時間到！";
                     isUrgent = true;
-
-                    // 如果剛好時間到且尚未響過警報
                     if (!alertedBosses[boss.name]) {
                         needPlayAlarm = true;
                         alertedBosses[boss.name] = true;
@@ -319,6 +381,7 @@
                 }
             }
 
+            // 電腦版表格
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><b>${boss.name}</b></td>
@@ -327,6 +390,23 @@
                 <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
+
+            // 手機版卡片
+            const card = document.createElement('div');
+            card.className = 'boss-card';
+            card.innerHTML = `
+                <div class="boss-card-header">
+                    <span>${boss.name}</span>
+                    <span style="font-size: 0.85rem; color: #999; font-weight: normal;">間隔: ${boss.interval}分</span>
+                </div>
+                <div class="boss-card-info">
+                    <span>預計重生: ${timeStr}</span>
+                </div>
+                <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">
+                    ${countdownStr}
+                </div>
+            `;
+            cardsContainer.appendChild(card);
         });
 
         if (needPlayAlarm) {
