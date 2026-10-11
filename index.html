@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v5.4</title>
+    <title>天堂M 王表系統 v5.7</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -206,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.4</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.7</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -272,7 +272,6 @@
     let isMuted = false;
     let notifiedLocalOneMin = {};
 
-    // 語音播報功能
     function speakText(text) {
         if (isMuted || volume <= 0) return;
         if ('speechSynthesis' in window) {
@@ -359,6 +358,7 @@
             });
     }
 
+    // 快速登記按鈕：明確以當下毫秒時間計算
     function registerBoss(bossName) {
         const now = new Date();
         const intervalMins = bossIntervals[bossName];
@@ -448,7 +448,6 @@
                 if (diff > 0 && diff <= 60000) {
                     if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
                         notifiedLocalOneMin[name] = respawnTimeMs;
-                        // 僅使用語音播報：【某某王】將於一分鐘內重生
                         speakText(`${name}將於一分鐘內重生`);
                     }
                 }
