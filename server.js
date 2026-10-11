@@ -1,39 +1,94 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const express = require('express');
+const cors = require('cors');
+const fetch = require('node-fetch');
 
-// 監聽 KB 指令：顯示 Boss 列表與對應的擊殺按鈕
-if (cmd === 'KB') {
-    const now = Date.now();
-    const embeds = [];
-    const components = [];
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-    // 為每一隻王建立一個獨立的 Embed 區塊與紅色擊殺按鈕
-    bossList.forEach((boss, index) => {
-        const respawnTime = global.bossStates && global.bossStates[boss.name];
-        let timeStr = "尚未登記";
+app.use(cors());
+app.use(express.json());
 
-        if (respawnTime && respawnTime > 0) {
-            const date = new Date(respawnTime);
-            timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+let bossStates = {};
+let notifiedOneMin = {}; // 避免重複發送 1 分鐘前通知
+
+// 💡 已經自動填入你剛剛提供的 Discord Webhook 網址
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK';
+
+async function sendDiscordNotification(message) {
+    if (!DISCORD_WEBHOOK_URL) return;
+    try {
+        await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: message })
+        });
+    } catch (err) {
+        console.log("Discord 通知發送失敗:", err);
+    }
+}
+
+// 取得目前的王表狀態
+app.get('/api/bosses', (req, res) => {
+    res.json({ bossStates });
+});
+
+// 更新王表狀態 (並在每次更新時檢查是否需要推播)
+app.post('/api/bosses', (req, res) => {
+    if (req.body && req.body.states) {
+        bossStates = req.body.states;
+        res.json({ success: true, bossStates });
+    } else {
+        res.status(400).json({ success: false, error: 'Invalid data' });
+    }
+});
+
+// 全部重置
+app.post('/api/reset', (req, res) => {
+    bossStates = {};
+    notifiedOneMin = {};
+    res.json({ success: true, bossStates });
+});
+
+// 💡 定期背景檢查（每 10 秒執行一次），自動偵測是否有王在 1 分鐘內即將重生
+setInterval(() => {
+    const now = new Date().getTime();
+    
+    // 定義王的時間間隔對照表（與前端一致）
+    const bossIntervals = {
+        "死亡騎士": 240,
+        "將軍": 360,
+        "古代巨人": 510,
+        "不死鳥": 480,
+        "克特": 600
+    };
+
+    for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
+        if (!respawnTimeMs) continue;
+        const intervalMs = (bossIntervals[name] || 240) * 60000;
+        let displayRespawnTime = respawnTimeMs;
+
+        // 計算循環超時後的最近重生點
+        if (now > displayRespawnTime) {
+            const diffTime = now - displayRespawnTime;
+            const overdueCount = Math.floor(diffTime / intervalMs) + 1;
+            displayRespawnTime += overdueCount * intervalMs;
         }
 
-        // 建立類似截圖的 Embed 樣式
-        const embed = new EmbedBuilder()
-            .setColor(0x3b82f6)
-            .setDescription(`**[天堂M] ${boss.name}**\n重生時間: ${timeStr} (Asia/Taipei)`);
+        const diff = displayRespawnTime - now;
 
-        embeds.push(embed);
+        // 當剩餘時間小於等於 60 秒且大於 0 且尚未發送過通知
+        if (diff <= 60000 && diff > 0) {
+            if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
+                notifiedOneMin[name] = displayRespawnTime;
+                const respawnDate = new Date(displayRespawnTime);
+                const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+                
+                sendDiscordNotification(`🚨 **[天堂M 王表通知]** 警告！**${name}** 將於 1 分鐘後（${timeStr}）重生，請血盟成員準備集合！`);
+            }
+        }
+    }
+}, 10000);
 
-        // 每隻王下方帶有一顆紅色的「擊殺」按鈕
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`kill_${boss.name}`)
-                .setLabel('擊殺')
-                .setStyle(ButtonStyle.Danger) // 紅色按鈕
-        );
-        components.push(row);
-    });
-
-    // 由於 Discord 單則訊息最多帶 10 個 embeds，這裡可以一次發送或分批發送
-    // 為了排版整齊，可以將清單整合或分則發送。這裡示範將全部 Embed 與按鈕組合發送：
-    return message.reply({ embeds: embeds.slice(0, 10), components: components.slice(0, 5) });
-}
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
