@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v1.9</title>
+    <title>天堂M 王表系統 v2.0</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -213,7 +213,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.9</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v2.0</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -262,7 +262,6 @@
             <option value="不死鳥">不死鳥 (480分)</option>
             <option value="克特">克特 (600分)</option>
         </select>
-        <!-- 💡 加上 onkeydown 監聽 Enter 鍵 -->
         <input type="text" id="manual-time" placeholder="例如 120215" maxlength="6" onkeydown="handleKey(event)">
         <button onclick="manualRegister()">登記擊殺 (K)</button>
     </div>
@@ -285,7 +284,7 @@
     ];
 
     let bossStates = {};
-    let alertedBosses = {};
+    let alertedBosses = {}; // 記錄是否已經提醒過 1 分鐘與時間到
 
     function fetchServerData(showAlert = false) {
         fetch(SERVER_URL)
@@ -354,7 +353,9 @@
 
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
-        alertedBosses[name] = false;
+        
+        // 初始化該王的提醒狀態：1分鐘提醒與時間到提醒皆設為 false
+        alertedBosses[name] = { min1: false, zero: false };
         sendToServer();
     }
 
@@ -429,19 +430,31 @@
             let countdownStr = "-";
             let isUrgent = false;
 
+            // 確保該王的提醒狀態物件存在
+            if (!alertedBosses[boss.name]) {
+                alertedBosses[boss.name] = { min1: false, zero: false };
+            }
+
             if (respawnTimeMs && respawnTimeMs > 0) {
                 const respawnDate = new Date(respawnTimeMs);
                 timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
 
                 const diff = respawnTimeMs - now;
+
                 if (diff <= 0) {
                     countdownStr = "🔥 已重生 / 時間到！";
                     isUrgent = true;
-                    if (!alertedBosses[boss.name]) {
+                    if (!alertedBosses[boss.name].zero) {
                         needPlayAlarm = true;
-                        alertedBosses[boss.name] = true;
+                        alertedBosses[boss.name].zero = true;
                     }
                 } else {
+                    // 💡 檢查是否進入最後 1 分鐘（介於 0 到 60,000 毫秒之間）
+                    if (diff <= 60000 && !alertedBosses[boss.name].min1) {
+                        needPlayAlarm = true;
+                        alertedBosses[boss.name].min1 = true; // 標記 1 分鐘已提醒過
+                    }
+
                     const totalSec = Math.floor(diff / 1000);
                     const hours = Math.floor(totalSec / 3600);
                     const minutes = Math.floor((totalSec % 3600) / 60);
