@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.2</title>
+    <title>天堂M 王表系統 v6.3</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -220,8 +220,8 @@
             font-weight: bold;
         }
 
-        /* 僅在過期（過1、過2、過3）時顯示紅色的樣式 */
-        .countdown-overdue {
+        /* 僅用於過期標籤的紅色樣式 */
+        .overdue-tag {
             color: var(--warning-text);
             font-weight: bold;
         }
@@ -236,7 +236,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.2</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.3</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -477,7 +477,6 @@
             let respawnTimeMs = bossStates[name];
             let respawnStr = "尚未登記";
             let countdownStr = "-";
-            let respawnClass = ""; 
             let countdownClass = ""; 
             const intervalMs = intervalMins * 60000;
 
@@ -490,11 +489,6 @@
                 }
 
                 const diff = respawnTimeMs - now;
-                
-                // 只有當 overdueCount > 0（即過1、過2、過3...）時，預計重生時間才會套用紅色樣式
-                if (overdueCount > 0) {
-                    respawnClass = "countdown-overdue"; 
-                }
 
                 if (diff > 0 && diff <= 60000) {
                     countdownClass = "countdown-danger";
@@ -509,9 +503,10 @@
                 const mm = String(respawnDate.getMinutes()).padStart(2, '0');
                 const ss = String(respawnDate.getSeconds()).padStart(2, '0');
                 
+                // 重生時間固定顯示白色，只有後面附加的 (過X) 加上紅色標籤類別
                 respawnStr = `${hh}:${mm}:${ss}`;
                 if (overdueCount > 0) {
-                    respawnStr += ` (過${overdueCount})`;
+                    respawnStr += ` <span class="overdue-tag">(過${overdueCount})</span>`;
                 }
 
                 if (diff > 0) {
@@ -529,7 +524,7 @@
             tr.innerHTML = `
                 <td><strong>${name}</strong></td>
                 <td>${intervalMins}分</td>
-                <td class="${respawnClass}">${respawnStr}</td>
+                <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
