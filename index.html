@@ -281,6 +281,7 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
+    // 正確綁定你的 npoint API 網址
     const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
 
     const bossList = [
@@ -301,6 +302,8 @@
             .then(data => {
                 if (data && typeof data === 'object') {
                     const cloudTimestamp = data._updatedAt || 0;
+                    
+                    // 依照全域時間戳判斷：只有當雲端資料比本地新時才進行更新
                     if (cloudTimestamp > lastSyncTime) {
                         lastSyncTime = cloudTimestamp;
                         localStorage.setItem('lastSyncTime', lastSyncTime);
@@ -321,7 +324,7 @@
     }
 
     function saveCloudData() {
-        lastSyncTime = new Date().getTime();
+        lastSyncTime = new Date().getTime(); // 產生最新的操作時間戳
         localStorage.setItem('lastSyncTime', lastSyncTime);
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
 
@@ -428,14 +431,13 @@
         const now = new Date().getTime();
         let needPlayAlarm = false;
 
-        // 統一排序邏輯：有登記的依照重生時間先後排序，未登記的排在後面
         let sortedBossList = [...bossList].sort((a, b) => {
             let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
             let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
             return timeA - timeB;
         });
 
-        // 1. 電腦版表格渲染（已加入自動排序）
+        // 1. 電腦版表格渲染（自動依時間排序）
         sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
@@ -473,7 +475,7 @@
             tbody.appendChild(tr);
         });
 
-        // 2. 手機版卡片渲染（自動排序）
+        // 2. 手機版卡片渲染（自動依時間排序）
         sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
