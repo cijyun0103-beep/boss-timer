@@ -257,8 +257,6 @@
 </div>
 
 <script>
-    const API_BASE = 'https://boss-timer-9c6e.onrender.com';
-
     const bossIntervals = {
         "死亡騎士": 240,
         "將軍": 360,
@@ -344,7 +342,7 @@
     }
 
     function syncToServer() {
-        fetch(`${API_BASE}/api/bosses`, {
+        fetch('/api/bosses', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ states: bossStates })
@@ -360,7 +358,7 @@
     }
 
     function fetchServerData(showAlert = false) {
-        fetch(`${API_BASE}/api/bosses`)
+        fetch('/api/bosses')
             .then(res => res.json())
             .then(data => {
                 if (data && data.bossStates) {
@@ -421,7 +419,7 @@
 
     function resetAll() {
         if (confirm("確定要重置所有王表紀錄嗎？")) {
-            fetch(`${API_BASE}/api/reset`, { method: 'POST' })
+            fetch('/api/reset', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     bossStates = data.bossStates || {};
