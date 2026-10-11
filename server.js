@@ -56,6 +56,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
                 if (reaction.emoji.name === '💩') {
+                    // 確保點擊 Discord 💩 反應時，擊殺時間一律為「當下」按按鈕的時間
                     const now = new Date();
                     const killTimeMs = now.getTime();
                     const intervalMs = bossIntervals[bossName] * 60000;
@@ -110,7 +111,6 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 背景定時檢查：當王倒數剩 1 分鐘時發送通報並自動掛上 💩
 setInterval(async () => {
     if (!client.isReady()) return;
     const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
