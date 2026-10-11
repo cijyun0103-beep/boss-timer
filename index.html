@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v1.2</title>
+    <title>天堂M 王表系統 v1.6</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -89,13 +89,6 @@
             color: #93c5fd;
         }
 
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
         button {
             background-color: var(--accent-color);
             color: white;
@@ -114,7 +107,7 @@
         .btn-danger {
             background-color: var(--danger-color);
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         .btn-danger:hover {
             background-color: var(--danger-hover);
@@ -126,7 +119,7 @@
             background: #252525;
             padding: 12px;
             border-radius: 8px;
-            margin-bottom: 12px;
+            margin-top: 15px;
             align-items: center;
         }
 
@@ -140,6 +133,7 @@
             flex: 1;
         }
 
+        /* 預設 PC 版面保持不變 */
         .desktop-table {
             width: 100%;
             border-collapse: collapse;
@@ -157,72 +151,61 @@
 
         .mobile-cards {
             display: none;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .boss-card {
-            background: #262626;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .boss-card-header {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            font-size: 1.1rem;
-            color: #60a5fa;
-        }
-        .boss-card-countdown {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #f87171;
-            margin-top: 4px;
         }
 
-        /* 手機版排版：取消舊的亂序 order，確保自然往下排 */
+        .btn-quick-item {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-quick-item:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* 專門針對手機版的排版調整（PC版完全不受影響） */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
-            .mobile-cards { display: flex !important; }
+            .top-quick-buttons, .top-quick-buttons-title { display: none !important; } /* 隱藏手機上的快速登記標題與按鈕 */
+            .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
 
-            .btn-group {
-                display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 8px !important;
+            .boss-card {
+                background: #262626;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
             }
-            .btn-group button {
-                flex: 1 1 calc(33.333% - 6px) !important;
-                min-width: calc(33.333% - 6px) !important;
-                height: 44px !important;
-                padding: 0 !important;
-                font-size: 0.95rem !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
+            .boss-card-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
             }
-            .btn-group button:nth-child(4),
-            .btn-group button:nth-child(5) {
-                flex: 1 1 calc(50% - 4px) !important;
-                min-width: calc(50% - 4px) !important;
+            .boss-card-header {
+                font-weight: bold;
+                font-size: 0.95rem;
+                color: #999;
+                display: flex;
+                justify-content: space-between;
             }
-
+            .boss-card-countdown {
+                font-size: 1.05rem;
+                font-weight: bold;
+                color: #f87171;
+            }
+            
             .manual-section {
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 8px !important;
-            }
-            .manual-section select, 
-            .manual-section input, 
-            .manual-section button {
-                width: 100% !important;
-                box-sizing: border-box !important;
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>
@@ -230,8 +213,7 @@
 <body>
 
 <div class="container">
-    <!-- 💡 標題直接放最上面，手機跟電腦都會第一個顯示 -->
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.2</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.6</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -243,8 +225,9 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <div class="section-title">⚡ 快速登記</div>
-    <div class="btn-group">
+    <!-- PC版維持原本的快速登記按鈕群組 -->
+    <div class="section-title top-quick-buttons-title">⚡ 快速登記</div>
+    <div class="btn-group top-quick-buttons">
         <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
         <button onclick="registerBoss('將軍', new Date())">將軍</button>
         <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
@@ -252,7 +235,25 @@
         <button onclick="registerBoss('克特', new Date())">克特</button>
     </div>
 
-    <div class="section-title">手動補登</div>
+    <div class="section-title">📊 王表現況</div>
+    
+    <!-- 電腦版維持完整表格 -->
+    <table class="desktop-table">
+        <thead>
+            <tr>
+                <th>BOSS 名稱</th>
+                <th>間隔</th>
+                <th>預計重生時間</th>
+                <th>剩餘倒數</th>
+            </tr>
+        </thead>
+        <tbody id="boss-table-body"></tbody>
+    </table>
+
+    <!-- 手機版卡片：按鈕直接在各個王的前方（已無多餘字眼） -->
+    <div class="mobile-cards" id="boss-cards-container"></div>
+
+    <div class="section-title" style="margin-top: 20px;">手動補登</div>
     <div class="manual-section">
         <select id="boss-select">
             <option value="死亡騎士">死亡騎士 (240分)</option>
@@ -266,22 +267,6 @@
     </div>
 
     <button class="btn-danger" onclick="resetAll()">全部重置</button>
-
-    <div class="section-title" style="margin-top: 20px;">📊 王表現況</div>
-    
-    <table class="desktop-table">
-        <thead>
-            <tr>
-                <th>BOSS 名稱</th>
-                <th>間隔</th>
-                <th>預計重生時間</th>
-                <th>剩餘倒數</th>
-            </tr>
-        </thead>
-        <tbody id="boss-table-body"></tbody>
-    </table>
-
-    <div class="mobile-cards" id="boss-cards-container"></div>
 </div>
 
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -457,6 +442,7 @@
                 }
             }
 
+            // 電腦版維持原本的表格列
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><b>${boss.name}</b></td>
@@ -465,40 +451,19 @@
                 <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
-        });
 
-        sortedBossList.forEach(boss => {
-            const respawnTimeMs = bossStates[boss.name];
-            let timeStr = "尚未登記";
-            let countdownStr = "-";
-            let isUrgent = false;
-
-            if (respawnTimeMs && respawnTimeMs > 0) {
-                const respawnDate = new Date(respawnTimeMs);
-                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
-
-                const diff = respawnTimeMs - now;
-                if (diff <= 0) {
-                    countdownStr = "🔥 已重生 / 時間到！";
-                    isUrgent = true;
-                } else {
-                    const totalSec = Math.floor(diff / 1000);
-                    const hours = Math.floor(totalSec / 3600);
-                    const minutes = Math.floor((totalSec % 3600) / 60);
-                    const seconds = totalSec % 60;
-                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
-                }
-            }
-
+            // 手機版卡片：按鈕在左側，王名與重生時間在右側
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
-                <div class="boss-card-header">
-                    <span>${boss.name}</span>
-                    <span style="font-size: 0.85rem; color: #999; font-weight: normal;">${boss.interval}分</span>
+                <button class="btn-quick-item" onclick="registerBoss('${boss.name}', new Date())">${boss.name}</button>
+                <div class="boss-card-info">
+                    <div class="boss-card-header">
+                        <span>預計: ${timeStr}</span>
+                        <span>${boss.interval}分</span>
+                    </div>
+                    <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
                 </div>
-                <div style="font-size: 0.9rem; color: #b0b0b0;">預計: ${timeStr}</div>
-                <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
             `;
             cardsContainer.appendChild(card);
         });
