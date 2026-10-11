@@ -268,7 +268,7 @@
 </div>
 
 <script>
-    const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
+    const SERVER_URL = 'url?id=81api/bosses';
     const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
 
     const bossList = [
@@ -444,9 +444,26 @@
         cardsContainer.innerHTML = '';
         const now = new Date().getTime();
 
+        // 💡 修正排序邏輯：將已登記且快到期的排在前面，未登記的排在最後
         let sortedBossList = [...bossList].sort((a, b) => {
-            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
-            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
+            let timeA = bossStates[a.name];
+            let timeB = bossStates[b.name];
+
+            // 處理循環過期的實際顯示時間
+            if (timeA) {
+                const intervalMs = a.interval * 60000;
+                while (now > timeA) { timeA += intervalMs; }
+            }
+            if (timeB) {
+                const intervalMs = b.interval * 60000;
+                while (now > timeB) { timeB += intervalMs; }
+            }
+
+            // 未登記的排在最後面
+            if (!timeA && !timeB) return 0;
+            if (!timeA) return 1;
+            if (!timeB) return -1;
+
             return timeA - timeB;
         });
 
