@@ -56,7 +56,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
                 if (reaction.emoji.name === '💩') {
-                    //  Discord 💩 反應一律視為當下即時擊殺
                     const now = new Date();
                     const killTimeMs = now.getTime();
                     const intervalMs = bossIntervals[bossName] * 60000;
@@ -83,23 +82,20 @@ app.get('/api/bosses', (req, res) => {
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         const oldStates = { ...bossStates };
-        const incomingStates = req.body.states;
-        const now = new Date().getTime();
-
+        const incomingStates = req.body.states; // 格式: { [bossName]: respawnTimeMs }
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
                 const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                let killTimeMs = newRespawnTime - intervalMs;
+                
+                // 準確以傳過來的重生時間反推出正確的擊殺時間
+                const killTimeMs = newRespawnTime - intervalMs;
 
-                // 如果傳過來的重生時間算出來的擊殺時間距離現在超過 10 分鐘，
-                // 代表這可能是手動補登的時間，我們不強制覆蓋為當下，但如果是點擊按鈕產生的，則以當下為準
-                // 這裡我們直接信任前端傳來的精確時間，並根據是否為近 10 分鐘內決定是否發送即時通知
                 bossStates[bossName] = newRespawnTime;
                 notifiedOneMin[bossName] = false;
 
-                if (channel && Math.abs(now - killTimeMs) < 600000) {
+                if (channel) {
                     await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
                 }
             }
