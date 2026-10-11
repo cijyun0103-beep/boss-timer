@@ -316,10 +316,11 @@
         { name: "克特", interval: 600 }
     ];
 
-    // 初始化：先從本地讀取，確保一開網頁有資料可看，絕不盲目歸零
+    // 優先讀取本機 localStorage，確保資料絕對不遺失、不歸零
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
     let alertedBosses = {};
 
+    // 點擊按鈕或開機時抓取雲端
     function fetchCloudData(showAlert = false) {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
@@ -335,7 +336,7 @@
                         }
                     }
 
-                    // 💡 防呆核心：唯有當雲端「確實有資料」時才覆蓋本機；若雲端是空的，則「完整保留本機現狀」，絕不歸零！
+                    // 只有當雲端確實有有效資料時才全面覆蓋本機
                     if (hasValidData) {
                         bossStates = newStates;
                         localStorage.setItem('bossStates', JSON.stringify(bossStates));
@@ -351,8 +352,8 @@
             });
     }
 
+    // 儲存資料（同時寫入本機與雲端）
     function saveToCloud() {
-        // 同時存入本機與雲端
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
         updateDisplay();
 
@@ -378,7 +379,7 @@
         }
         updateVolume();
         updateDisplay();
-        fetchCloudData(false); // 開啟時在背景安靜抓取一次雲端
+        fetchCloudData(false); // 開啟網頁時在背景靜默同步一次雲端
     }
 
     function updateVolume() {
@@ -548,8 +549,7 @@
 
     window.onload = function() {
         initUI();
-        setInterval(updateDisplay, 1000);
-        setInterval(() => fetchCloudData(false), 5000); // 每 5 秒自動跟雲端同步
+        setInterval(updateDisplay, 1000); // 每一秒穩定更新倒數，取消每5秒自動抓雲端干擾
     };
 </script>
 
