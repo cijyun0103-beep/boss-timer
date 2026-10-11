@@ -35,7 +35,19 @@ client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
-// 監聽 Discord 上的表情符號反應（改為監聽 💩）
+// 共用的發送 Discord 擊殺通知函數
+async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
+    if (!channel) return;
+    const killDate = new Date(killTimeMs);
+    const killTimeStr = `${String(killDate.getHours()).padStart(2, '0')}:${String(killDate.getMinutes()).padStart(2, '0')}:${String(killDate.getSeconds()).padStart(2, '0')}`;
+    
+    const respawnDate = new Date(respawnTimeMs);
+    const respawnTimeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+
+    await channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
+}
+
+// 監聽 Discord 上的表情符號反應（點擊 💩 登記擊殺）
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
     if (reaction.partial) await reaction.fetch();
@@ -43,27 +55,18 @@ client.on('messageReactionAdd', async (reaction, user) => {
     const message = reaction.message;
     if (message.author.id === client.user.id && message.embeds.length > 0) {
         const embed = message.embeds[0];
-        
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
-                // 點擊 💩 觸發擊殺登記
                 if (reaction.emoji.name === '💩') {
                     const now = new Date();
-                    const killTimeMs = now.getTime(); // 記錄擊殺當下時間
+                    const killTimeMs = now.getTime();
                     const intervalMs = bossIntervals[bossName] * 60000;
-                    const respawnTimeMs = killTimeMs + intervalMs; // 計算重生時間
+                    const respawnTimeMs = killTimeMs + intervalMs;
 
                     bossStates[bossName] = respawnTimeMs;
                     notifiedOneMin[bossName] = false;
 
-                    const killDate = new Date(killTimeMs);
-                    const killTimeStr = `${String(killDate.getHours()).padStart(2, '0')}:${String(killDate.getMinutes()).padStart(2, '0')}:${String(killDate.getSeconds()).padStart(2, '0')}`;
-
-                    const respawnDate = new Date(respawnTimeMs);
-                    const respawnTimeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
-
-                    // 同時顯示擊殺時間與重生時間
-                    await message.channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
+                    await sendKillNotification(message.channel, bossName, killTimeMs, respawnTimeMs);
                 }
             }
         }
@@ -79,9 +82,25 @@ app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
 });
 
-app.post('/api/bosses', (req, res) => {
+app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
+        const oldStates = { ...bossStates };
         bossStates = req.body.states;
+
+        const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
+        if (channel) {
+            const now = new Date().getTime();
+            for (const [bossName, newRespawnTime] of Object.entries(bossStates)) {
+                if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
+                    const intervalMs = (bossIntervals[bossName] || 240) * 60000;
+                    const killTimeMs = newRespawnTime - intervalMs;
+                    if (Math.abs(now - killTimeMs) < 600000) { 
+                        await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
+                    }
+                }
+            }
+        }
+
         res.json({ success: true, bossStates });
     } else {
         res.status(400).json({ success: false, error: 'Invalid data' });
@@ -101,7 +120,6 @@ setInterval(async () => {
     if (!channel) return;
 
     const now = new Date().getTime();
-
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
         if (!respawnTimeMs) continue;
         const intervalMs = bossIntervals[name] * 60000;
@@ -114,10 +132,10 @@ setInterval(async () => {
         }
 
         const diff = displayRespawnTime - now;
-
         if (diff <= 60000 && diff > 50000) {
             if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
                 notifiedOneMin[name] = displayRespawnTime;
+
                 const respawnDate = new Date(displayRespawnTime);
                 const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
 
@@ -129,7 +147,7 @@ setInterval(async () => {
 
                 const sentMsg = await channel.send({ embeds: [embed] }).catch(err => console.log("發送失敗:", err));
                 if (sentMsg) {
-                    await sentMsg.react('💩'); // 自動幫訊息貼上 💩 圖示
+                    await sentMsg.react('💩');
                 }
             }
         }
