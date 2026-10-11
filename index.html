@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.1</title>
+    <title>天堂M 王表系統 v6.2</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -220,7 +220,7 @@
             font-weight: bold;
         }
 
-        /* 過期（例如過1、過2）的紅色樣式 */
+        /* 僅在過期（過1、過2、過3）時顯示紅色的樣式 */
         .countdown-overdue {
             color: var(--warning-text);
             font-weight: bold;
@@ -236,7 +236,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.1</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.2</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -477,8 +477,8 @@
             let respawnTimeMs = bossStates[name];
             let respawnStr = "尚未登記";
             let countdownStr = "-";
-            let respawnClass = ""; // 預計重生時間的樣式
-            let countdownClass = ""; // 剩餘倒數的樣式
+            let respawnClass = ""; 
+            let countdownClass = ""; 
             const intervalMs = intervalMins * 60000;
 
             if (respawnTimeMs) {
@@ -491,12 +491,11 @@
 
                 const diff = respawnTimeMs - now;
                 
-                // 判斷是否過期（例如過1、過2）
+                // 只有當 overdueCount > 0（即過1、過2、過3...）時，預計重生時間才會套用紅色樣式
                 if (overdueCount > 0) {
-                    respawnClass = "countdown-overdue"; // 預計重生時間顯示紅色 (包含 "(過1)" 等字樣)
+                    respawnClass = "countdown-overdue"; 
                 }
 
-                // 判斷是否剩餘一分鐘以內
                 if (diff > 0 && diff <= 60000) {
                     countdownClass = "countdown-danger";
                     if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
