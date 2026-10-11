@@ -414,6 +414,7 @@
 
         let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
         
+        // 如果輸入的時間大於當前時間，視為昨天的擊殺紀錄
         if (killDate.getTime() > now.getTime()) {
             killDate.setDate(killDate.getDate() - 1);
         }
@@ -485,6 +486,7 @@
         }
     }
 
+    // 快捷鍵監聽：按 K 鍵直接觸發手動補登
     document.addEventListener('keydown', (e) => {
         if (e.key === 'k' || e.key === 'K') {
             if (document.activeElement.tagName !== 'INPUT') {
@@ -494,6 +496,7 @@
         }
     });
 
+    // 初始化與定時更新畫面
     initSelect();
     fetchServerData();
     setInterval(renderTable, 1000);
