@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.6</title>
+    <title>天堂M 王表系統 v4.7</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -268,7 +268,8 @@
 </div>
 
 <script>
-    const SERVER_URL = 'url?id=81api/bosses';
+    // 💡 正確填入你在 Render 上的雲端後端網址
+    const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
     const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
 
     const bossList = [
@@ -444,12 +445,10 @@
         cardsContainer.innerHTML = '';
         const now = new Date().getTime();
 
-        // 💡 修正排序邏輯：將已登記且快到期的排在前面，未登記的排在最後
         let sortedBossList = [...bossList].sort((a, b) => {
             let timeA = bossStates[a.name];
             let timeB = bossStates[b.name];
 
-            // 處理循環過期的實際顯示時間
             if (timeA) {
                 const intervalMs = a.interval * 60000;
                 while (now > timeA) { timeA += intervalMs; }
@@ -459,7 +458,6 @@
                 while (now > timeB) { timeB += intervalMs; }
             }
 
-            // 未登記的排在最後面
             if (!timeA && !timeB) return 0;
             if (!timeA) return 1;
             if (!timeB) return -1;
