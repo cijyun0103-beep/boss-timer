@@ -2,382 +2,346 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>天堂M 王表系統</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #1e1e1e; color: #d4d4d4; padding: 20px; }
-        h2 { color: #569cd6; }
-        .control-panel { background: #252526; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        .quick-btn { background: #2d89ef; margin-right: 5px; margin-bottom: 5px; padding: 10px 15px; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .quick-btn:hover { background: #1967d2; }
-        select, input, button { padding: 8px; margin: 5px 0; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; }
-        button { background: #0e639c; cursor: pointer; font-weight: bold; }
-        .volume-container { float: right; background: #333; padding: 6px 12px; border-radius: 4px; border: 1px solid #555; display: flex; align-items: center; gap: 8px; }
-        .mute-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0; color: #4ec9b0; }
-        .mute-btn:hover { opacity: 0.8; }
-        
-        /* 強制重置並顯示雙色漸層色彩的進度條 */
-        #volumeRange {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100px;
-            height: 6px;
-            border-radius: 3px;
-            outline: none;
-            cursor: pointer;
-            margin: 0;
-            padding: 0;
-            background: #555;
-        }
-        #volumeRange::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            background: transparent; /* 讓軌道背景交由 input 本身的 linear-gradient 呈現 */
-            border-radius: 3px;
-        }
-        #volumeRange::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #4ec9b0;
-            cursor: pointer;
-            margin-top: -4px;
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --border-color: #333;
         }
 
-        table { width: 100%; border-collapse: collapse; background: #252526; border-radius: 8px; overflow: hidden; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        th { background: #333333; color: #4ec9b0; }
-        .status-alert { color: #f44747; font-weight: bold; }
-        .over-badge { color: #ce9178; font-weight: bold; margin-left: 5px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #93c5fd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            margin-top: 10px;
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .manual-section {
+            display: flex;
+            gap: 10px;
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        select, input {
+            background: #333;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 6px;
+        }
+
+        .desktop-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .desktop-table th, .desktop-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1rem;
+        }
+
+        .desktop-table th {
+            background-color: #2a2a2a;
+        }
+
+        .settings-bar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9rem;
+            background: #1a1a1a;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
+<div class="container">
     <h2>⚔️ 天堂M 王表控制台</h2>
-    
-    <div class="control-panel">
-        <div class="volume-container">
-            <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="點擊切換靜音">🔊</button>
-            <input type="range" id="volumeRange" min="0" max="1" step="0.1" value="0.3" oninput="updateVolume(this.value)">
-            <span id="volumeText" style="font-size: 13px; font-weight: bold; min-width: 45px; text-align: right;">0.3</span>
-        </div>
 
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 8px; color: #4ec9b0; font-weight: bold;">⚡ 快速登記（點擊直接以當下時間計算）：</label>
-            <button class="quick-btn" onclick="quickRegister('死亡騎士')">死亡騎士</button>
-            <button class="quick-btn" onclick="quickRegister('將軍')">將軍</button>
-            <button class="quick-btn" onclick="quickRegister('古代巨人')">古代巨人</button>
-            <button class="quick-btn" onclick="quickRegister('不死鳥')">不死鳥</button>
-            <button class="quick-btn" onclick="quickRegister('克特')">克特</button>
-        </div>
-
-        <label>手動補登（輸入時間格式如 0354，按 Enter 即可送出）：</label><br>
-        <select id="bossSelect">
-            <option value="死亡騎士">死亡騎士 (240分)</option>
-            <option value="將軍">將軍 (360分)</option>
-            <option value="古代巨人">古代巨人 (510分)</option>
-            <option value="不死鳥">不死鳥 (480分)</option>
-            <option value="克特">克特 (600分)</option>
-        </select>
-        <input type="text" id="timeInput" placeholder="例如: 0354" onkeydown="if(event.key==='Enter'){registerKill();}">
-        <button onclick="registerKill()">登記擊殺 (K)</button>
-        <button onclick="resetAll()" style="background: #a31515; float: right;">全部重置</button>
+    <!-- 音效控制列 -->
+    <div class="settings-bar">
+        <label>🔊 提示音量：</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()">
+        <span id="volume-text">50%</span>
+        <button onclick="testAudio()" style="padding: 4px 10px; font-size: 0.85rem;">測試聲音</button>
     </div>
 
-    <table id="bossTable">
-        <tr>
-            <th>BOSS 名稱</th>
-            <th>間隔</th>
-            <th>預計重生時間</th>
-            <th>剩餘倒數</th>
-        </tr>
-    </table>
+    <div class="section-title">⚡ 快速登記（點擊直接以當下時間計算）</div>
+    <div class="btn-group" id="quick-buttons"></div>
 
-<script>
-    const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK";
+    <div class="section-title">手動補登</div>
+    <div class="manual-section">
+        <select id="boss-select"></select>
+        <input type="text" id="manual-time" placeholder="例如 0354 (或 1435)">
+        <button onclick="manualRegister()">登記擊殺 (K)</button>
+    </div>
 
-    let bossData = {
-        "死亡騎士": { interval: 240, respawnTime: null, notified: false },
-        "將軍": { interval: 360, respawnTime: null, notified: false },
-        "古代巨人": { interval: 510, respawnTime: null, notified: false },
-        "不死鳥": { interval: 480, respawnTime: null, notified: false },
-        "克特": { interval: 600, respawnTime: null, notified: false }
-    };
+    <button class="btn-danger" onclick="resetAll()">全部重置</button>
 
-    const STORAGE_KEY = 'boss_table_data_v19';
-    let currentVolume = 0.3;
-    let lastVolume = 0.3;
-
-    function updateVolume(val) {
-        currentVolume = parseFloat(val);
-        if (currentVolume > 0) {
-            lastVolume = currentVolume;
-        }
-        refreshVolumeUI();
-        localStorage.setItem('boss_voice_volume', currentVolume);
-    }
-
-    function toggleMute() {
-        if (currentVolume > 0) {
-            lastVolume = currentVolume;
-            currentVolume = 0;
-        } else {
-            currentVolume = lastVolume > 0 ? lastVolume : 0.3;
-        }
-        document.getElementById("volumeRange").value = currentVolume;
-        refreshVolumeUI();
-        localStorage.setItem('boss_voice_volume', currentVolume);
-    }
-
-    function refreshVolumeUI() {
-        const volText = document.getElementById("volumeText");
-        const muteBtn = document.getElementById("muteBtn");
-        const rangeInput = document.getElementById("volumeRange");
-
-        // 動態計算百分比並設定漸層顏色
-        const percent = (currentVolume / 1) * 100;
-        rangeInput.style.background = `linear-gradient(to right, #4ec9b0 ${percent}%, #555 ${percent}%)`;
-
-        if (currentVolume === 0) {
-            muteBtn.textContent = "🔇";
-            muteBtn.style.color = "#f44747";
-            volText.textContent = "靜音";
-            volText.style.color = "#f44747";
-        } else {
-            muteBtn.textContent = "🔊";
-            muteBtn.style.color = "#4ec9b0";
-            volText.textContent = currentVolume.toFixed(1);
-            volText.style.color = "#fff";
-        }
-    }
-
-    function loadVolume() {
-        const savedVol = localStorage.getItem('boss_voice_volume');
-        if (savedVol !== null) {
-            currentVolume = parseFloat(savedVol);
-            if (currentVolume > 0) lastVolume = currentVolume;
-            document.getElementById("volumeRange").value = currentVolume;
-        }
-        refreshVolumeUI();
-    }
-
-    function loadSavedData() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                for (let boss in parsed) {
-                    if (parsed[boss] && parsed[boss].respawnTime && bossData[boss]) {
-                        bossData[boss].respawnTime = new Date(parsed[boss].respawnTime);
-                        bossData[boss].notified = parsed[boss].notified || false;
-                    }
-                }
-            }
-        } catch (e) {
-            localStorage.removeItem(STORAGE_KEY);
-        }
-    }
-
-    function saveData() {
-        try {
-            const dataToSave = {};
-            for (let boss in bossData) {
-                dataToSave[boss] = {
-                    respawnTime: bossData[boss].respawnTime ? bossData[boss].respawnTime.getTime() : null,
-                    notified: bossData[boss].notified
-                };
-            }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-        } catch (e) {}
-    }
-
-    function speakText(text) {
-        try {
-            if (currentVolume <= 0) return; 
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-TW';
-                utterance.rate = 1.0;
-                utterance.volume = currentVolume;
-                window.speechSynthesis.speak(utterance);
-            }
-        } catch (e) {}
-    }
-
-    function sendDiscord(message) {
-        if (!DISCORD_WEBHOOK_URL) return;
-        fetch(DISCORD_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: message })
-        }).catch(err => {});
-    }
-
-    function quickRegister(name) {
-        let killedTime = new Date();
-        const intervalMins = bossData[name].interval;
-        let respawnTime = new Date(killedTime.getTime() + intervalMins * 60000);
-
-        bossData[name].respawnTime = respawnTime;
-        bossData[name].notified = false; 
-
-        saveData();
-
-        let respawnStr = respawnTime.toTimeString().split(' ')[0];
-        sendDiscord(`【${name}】已擊殺！於 **${respawnStr}** 重生。`);
-        updateTable();
-    }
-
-    function registerKill() {
-        const name = document.getElementById("bossSelect").value;
-        const timeStr = document.getElementById("timeInput").value.trim();
-        let killedTime = new Date();
-        let now = new Date();
-
-        if (!name) return;
-
-        if (timeStr.length === 4 && !isNaN(timeStr)) {
-            let h = parseInt(timeStr.substring(0, 2));
-            let m = parseInt(timeStr.substring(2, 4));
-            killedTime.setHours(h, m, 0, 0);
-        } else if (timeStr.length === 6 && !isNaN(timeStr)) {
-            let h = parseInt(timeStr.substring(0, 2));
-            let m = parseInt(timeStr.substring(2, 4));
-            let s = parseInt(timeStr.substring(4, 6));
-            killedTime.setHours(h, m, s, 0);
-        } else if (timeStr.length > 0) {
-            alert("格式錯誤！請輸入 4 碼（例如 0354）或 6 碼數字。");
-            return;
-        }
-
-        if (timeStr.length > 0 && killedTime > now) {
-            alert("❌ 錯誤：輸入的時間大於當前時間，無法登記未來時間！");
-            return;
-        }
-
-        const intervalMins = bossData[name].interval;
-        let respawnTime = new Date(killedTime.getTime() + intervalMins * 60000);
-
-        bossData[name].respawnTime = respawnTime;
-        bossData[name].notified = false; 
-
-        saveData();
-
-        let respawnStr = respawnTime.toTimeString().split(' ')[0];
-        sendDiscord(`【${name}】已擊殺！於 **${respawnStr}** 重生。`);
-
-        document.getElementById("timeInput").value = "";
-        updateTable();
-    }
-
-    function resetAll() {
-        if (confirm("確定要重置所有王的倒數時間嗎？")) {
-            for (let boss in bossData) {
-                bossData[boss].respawnTime = null;
-                bossData[boss].notified = false;
-            }
-            localStorage.removeItem(STORAGE_KEY);
-            sendDiscord("⚠️ 【王表系統】所有 BOSS 時間已被全部重置！");
-            updateTable();
-        }
-    }
-
-    function updateTable() {
-        try {
-            const now = new Date();
-            let bossArray = [];
-
-            for (let boss in bossData) {
-                let data = bossData[boss];
-                let effectiveRespawn = data.respawnTime ? new Date(data.respawnTime.getTime()) : null;
-                let overCount = 0;
-                const intervalMs = data.interval * 60000;
-
-                if (effectiveRespawn) {
-                    while (now > effectiveRespawn) {
-                        effectiveRespawn = new Date(effectiveRespawn.getTime() + intervalMs);
-                        overCount++;
-                    }
-                }
-
-                bossArray.push({
-                    name: boss,
-                    interval: data.interval,
-                    respawnTime: effectiveRespawn,
-                    overCount: overCount,
-                    notified: data.notified || false
-                });
-            }
-
-            bossArray.sort((a, b) => {
-                if (a.respawnTime && b.respawnTime) {
-                    return a.respawnTime - b.respawnTime;
-                } else if (a.respawnTime && !b.respawnTime) {
-                    return -1;
-                } else if (!a.respawnTime && b.respawnTime) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            });
-
-            let html = `<tr>
+    <div class="section-title" style="margin-top: 25px;">📊 王表現況</div>
+    
+    <table class="desktop-table">
+        <thead>
+            <tr>
                 <th>BOSS 名稱</th>
                 <th>間隔</th>
                 <th>預計重生時間</th>
                 <th>剩餘倒數</th>
-            </tr>`;
+            </tr>
+        </thead>
+        <tbody id="boss-table-body"></tbody>
+    </table>
+</div>
 
-            for (let item of bossArray) {
-                let boss = item.name;
-                let data = bossData[boss];
-                let respawnStr = "尚未登記";
-                let remainingStr = "-";
+<!-- 提示音效來源 -->
+<audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
-                if (item.respawnTime) {
-                    respawnStr = item.respawnTime.toTimeString().split(' ')[0];
-                    if (item.overCount > 0) {
-                        respawnStr += `<span class="over-badge">(過${item.overCount})</span>`;
-                    }
+<script>
+    const bossList = [
+        { name: "死亡騎士", interval: 240 },
+        { name: "將軍", interval: 360 },
+        { name: "古代巨人", interval: 510 },
+        { name: "不死鳥", interval: 480 },
+        { name: "克特", interval: 600 }
+    ];
 
-                    let diff = item.respawnTime - now;
+    let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+    let alertedBosses = {}; // 避免時間到時重複狂響
 
-                    if (diff > 0) {
-                        let totalSecs = Math.floor(diff / 1000);
-                        
-                        if (totalSecs <= 60 && !item.notified) {
-                            data.notified = true; 
-                            saveData(); 
-                            sendDiscord(`🚨 **【重要快訊】** 【${boss}】將於 **1 分鐘內** 重生！`);
-                            speakText(`${boss} 將於一分鐘後重生！`);
-                        }
+    function initUI() {
+        const quickDiv = document.getElementById('quick-buttons');
+        const select = document.getElementById('boss-select');
+        quickDiv.innerHTML = '';
+        select.innerHTML = '';
 
-                        let hours = Math.floor(totalSecs / 3600);
-                        let mins = Math.floor((totalSecs % 3600) / 60);
-                        let secs = totalSecs % 60;
-                        remainingStr = `${hours}時 ${mins}分 ${secs}秒`;
-                    } else {
-                        remainingStr = `<span class="status-alert">已到重生時間！</span>`;
-                    }
-                }
+        bossList.forEach(boss => {
+            const btn = document.createElement('button');
+            btn.innerText = boss.name;
+            btn.onclick = () => registerBoss(boss.name, new Date());
+            quickDiv.appendChild(btn);
 
-                html += `<tr>
-                    <td><b>${boss}</b></td>
-                    <td>${data.interval}分</td>
-                    <td>${respawnStr}</td>
-                    <td>${remainingStr}</td>
-                </tr>`;
-            }
-            document.getElementById("bossTable").innerHTML = html;
-        } catch (err) {}
+            const option = document.createElement('option');
+            option.value = boss.name;
+            option.textContent = `${boss.name} (${boss.interval}分)`;
+            select.appendChild(option);
+        });
+
+        // 初始化音量
+        const slider = document.getElementById('volume-slider');
+        const savedVol = localStorage.getItem('alarmVolume');
+        if (savedVol !== null) {
+            slider.value = savedVol;
+            document.getElementById('volume-text').innerText = Math.round(savedVol * 100) + '%';
+        }
+        updateVolume();
+
+        updateDisplay();
     }
 
-    loadVolume();
-    loadSavedData();
-    setInterval(updateTable, 1000);
-    updateTable();
+    function updateVolume() {
+        const slider = document.getElementById('volume-slider');
+        const audio = document.getElementById('alarm-sound');
+        audio.volume = slider.value;
+        document.getElementById('volume-text').innerText = Math.round(slider.value * 100) + '%';
+        localStorage.setItem('alarmVolume', slider.value);
+    }
+
+    function testAudio() {
+        const audio = document.getElementById('alarm-sound');
+        audio.currentTime = 0;
+        audio.play().catch(e => {
+            alert("請先在網頁任意處點擊一下（解鎖瀏覽器音效權限），再測試聲音！");
+        });
+    }
+
+    function registerBoss(name, date) {
+        const boss = bossList.find(b => b.name === name);
+        if (!boss) return;
+
+        const respawnTime = new Date(date.getTime() + boss.interval * 60000);
+        bossStates[name] = respawnTime.getTime();
+        alertedBosses[name] = false; // 重設警報狀態
+        saveAndRefresh();
+    }
+
+    function manualRegister() {
+        const selectName = document.getElementById('boss-select').value;
+        const timeInput = document.getElementById('manual-time').value.trim();
+
+        if (!/^\d{4}$/.test(timeInput)) {
+            alert("請輸入正確的時間格式，例如 0354 或 1435");
+            return;
+        }
+
+        const hours = parseInt(timeInput.substring(0, 2), 10);
+        const minutes = parseInt(timeInput.substring(2, 4), 10);
+
+        if (hours > 23 || minutes > 59) {
+            alert("時間格式錯誤（小時 00-23，分鐘 00-59）");
+            return;
+        }
+
+        const now = new Date();
+        const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+
+        registerBoss(selectName, targetDate);
+        document.getElementById('manual-time').value = '';
+    }
+
+    function resetAll() {
+        if (confirm("確定要重置所有王的計時嗎？")) {
+            bossStates = {};
+            alertedBosses = {};
+            saveAndRefresh();
+        }
+    }
+
+    function saveAndRefresh() {
+        localStorage.setItem('bossStates', JSON.stringify(bossStates));
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const tbody = document.getElementById('boss-table-body');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        const now = new Date().getTime();
+        let needPlayAlarm = false;
+
+        bossList.forEach(boss => {
+            const respawnTimeMs = bossStates[boss.name];
+            let timeStr = "尚未登記";
+            let countdownStr = "-";
+            let isUrgent = false;
+
+            if (respawnTimeMs) {
+                const respawnDate = new Date(respawnTimeMs);
+                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
+
+                const diff = respawnTimeMs - now;
+                if (diff <= 0) {
+                    countdownStr = "🔥 已重生 / 時間到！";
+                    isUrgent = true;
+
+                    // 如果剛好時間到且尚未響過警報
+                    if (!alertedBosses[boss.name]) {
+                        needPlayAlarm = true;
+                        alertedBosses[boss.name] = true;
+                    }
+                } else {
+                    const totalSec = Math.floor(diff / 1000);
+                    const hours = Math.floor(totalSec / 3600);
+                    const minutes = Math.floor((totalSec % 3600) / 60);
+                    const seconds = totalSec % 60;
+                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
+                }
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><b>${boss.name}</b></td>
+                <td>${boss.interval}分</td>
+                <td>${timeStr}</td>
+                <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (needPlayAlarm) {
+            const audio = document.getElementById('alarm-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log("等待互動解鎖音效"));
+        }
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : n;
+    }
+
+    setInterval(updateDisplay, 1000);
+    initUI();
 </script>
 
 </body>
