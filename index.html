@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.0</title>
+    <title>天堂M 王表系統 v6.1</title>
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-color: #e0e0e0;
-            --accent-color: #3b82f6; /* 主要按鈕顏色 */
+            --accent-color: #3b82f6;
             --accent-hover: #2563eb;
             --danger-color: #ef4444;
             --danger-hover: #dc2626;
-            --success-color: #10b981; /* 修改：將原本的綠色定義為成功色，用於音量條 */
+            --success-color: #10b981;
             --success-hover: #059669;
             --border-color: #333;
-            --warning-text: #ff4444; /* 新增：用於剩餘一分鐘的紅色警示文字 */
+            --warning-text: #ff4444;
         }
 
         body {
@@ -71,20 +71,18 @@
             font-size: 1.1rem;
         }
 
-        /* 修改：音量滑桿軌道顏色 */
         .settings-bar input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
             width: 140px;
             height: 6px;
-            background: #444; /* 滑桿背景 */
+            background: #444;
             border-radius: 3px;
             outline: none !important;
             cursor: pointer;
             margin: 0 4px;
         }
 
-        /* 滑桿已選擇部分的顏色 (綠色) */
         .settings-bar input[type="range"]::-webkit-slider-runnable-track {
             width: 100%;
             height: 6px;
@@ -93,7 +91,6 @@
             border-radius: 3px;
         }
         
-        /* 為了讓 WebKit 瀏覽器正確顯示顏色，我們需要在 JS 中動態更新 --value，此處設定預設樣式 */
         .settings-bar input[type="range"]::-moz-range-track {
             width: 100%;
             height: 6px;
@@ -108,10 +105,10 @@
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            background: #fff; /* 滑塊圓球顏色 */
+            background: #fff;
             cursor: pointer;
             transition: background 0.1s;
-            margin-top: -4px; /* 讓圓球置中對齊軌道 */
+            margin-top: -4px;
         }
         
         .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
@@ -217,8 +214,14 @@
             background-color: #2a2a2a;
         }
 
-        /* 新增：剩餘倒數為紅色的樣式 */
+        /* 倒數小於1分鐘的紅色樣式 */
         .countdown-danger {
+            color: var(--warning-text);
+            font-weight: bold;
+        }
+
+        /* 過期（例如過1、過2）的紅色樣式 */
+        .countdown-overdue {
             color: var(--warning-text);
             font-weight: bold;
         }
@@ -233,13 +236,12 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.0</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.1</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
             <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
             <label>音量:</label>
-            <!-- 修改：加入 oninput 事件即時更新樣式變數 -->
             <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume(); updateSliderAccent(this);">
             <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
@@ -300,7 +302,6 @@
     let isMuted = false;
     let notifiedLocalOneMin = {};
 
-    // 初始化時設定滑桿樣式
     window.onload = function() {
         const slider = document.getElementById('volume-slider');
         updateSliderAccent(slider);
@@ -310,7 +311,6 @@
         setInterval(() => { fetchServerData(); }, 15000);
     };
 
-    // 新增：動態更新 WebKit 滑桿已選擇部分的顏色
     function updateSliderAccent(slider) {
         slider.style.setProperty('--value', slider.value + '%');
     }
@@ -357,7 +357,7 @@
             slider.value = volume * 100;
             document.getElementById('volume-text').innerText = Math.round(volume * 100) + '%';
         }
-        updateSliderAccent(slider); // 切換靜音時同步更新滑桿樣式
+        updateSliderAccent(slider);
     }
 
     function initSelect() {
@@ -463,7 +463,6 @@
                 .then(data => {
                     bossStates = data.bossStates || {};
                     notifiedLocalOneMin = {};
-                    notifiedLocalFiveMin = {};
                     renderTable();
                 });
         }
@@ -478,7 +477,8 @@
             let respawnTimeMs = bossStates[name];
             let respawnStr = "尚未登記";
             let countdownStr = "-";
-            let countdownClass = ""; // 新增：倒數文字樣式類別
+            let respawnClass = ""; // 預計重生時間的樣式
+            let countdownClass = ""; // 剩餘倒數的樣式
             const intervalMs = intervalMins * 60000;
 
             if (respawnTimeMs) {
@@ -491,9 +491,14 @@
 
                 const diff = respawnTimeMs - now;
                 
+                // 判斷是否過期（例如過1、過2）
+                if (overdueCount > 0) {
+                    respawnClass = "countdown-overdue"; // 預計重生時間顯示紅色 (包含 "(過1)" 等字樣)
+                }
+
                 // 判斷是否剩餘一分鐘以內
                 if (diff > 0 && diff <= 60000) {
-                    countdownClass = "countdown-danger"; // 套用紅色樣式
+                    countdownClass = "countdown-danger";
                     if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
                         notifiedLocalOneMin[name] = respawnTimeMs;
                         speakText(`${name}將於一分鐘內重生`);
@@ -525,8 +530,8 @@
             tr.innerHTML = `
                 <td><strong>${name}</strong></td>
                 <td>${intervalMins}分</td>
-                <td>${respawnStr}</td>
-                <td class="${countdownClass}">${countdownStr}</td> <!-- 套用樣式 -->
+                <td class="${respawnClass}">${respawnStr}</td>
+                <td class="${countdownClass}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
         }
@@ -547,7 +552,6 @@
             }
         }
     });
-
 </script>
 
 </body>
