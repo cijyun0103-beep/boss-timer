@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v2.0</title>
+    <title>天堂M 王表系統 v4.3</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -59,13 +59,63 @@
             align-items: center;
             font-size: 0.85rem;
             background: #1a1a1a;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             width: fit-content;
         }
+
+        .volume-icon {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1rem;
+            transition: opacity 0.2s;
+        }
+        .volume-icon:hover {
+            opacity: 0.7;
+        }
+
+        /* 💡 徹底根除所有瀏覽器預設的外框、焦點藍圈與陰影 */
         .settings-bar input[type="range"] {
-            width: 90px;
-            accent-color: var(--accent-color);
+            -webkit-appearance: none;
+            appearance: none;
+            width: 140px;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none !important;
+            cursor: pointer;
+            margin: 0 4px;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        .settings-bar input[type="range"]:focus,
+        .settings-bar input[type="range"]:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            transition: transform 0.1s;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .settings-bar input[type="range"]::-moz-focus-outer {
+            border: 0;
         }
 
         .btn-refresh {
@@ -133,7 +183,28 @@
             flex: 1;
         }
 
-        /* 預設 PC 版面保持不變 */
+        .pc-widget-panel {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pc-widget-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pc-widget-buttons button {
+            flex: 1;
+            min-width: 110px;
+            padding: 8px 10px;
+            font-size: 0.95rem;
+        }
+
         .desktop-table {
             width: 100%;
             border-collapse: collapse;
@@ -167,11 +238,10 @@
             background-color: var(--accent-hover);
         }
 
-        /* 專門針對手機版的排版調整（PC版完全不受影響） */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
-            .top-quick-buttons, .top-quick-buttons-title { display: none !important; }
+            .pc-widget-panel { display: none !important; }
             .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
 
             .boss-card {
@@ -213,31 +283,32 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v2.0</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.3</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
-            <label>🔊 音量:</label>
-            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()">
-            <span id="volume-text">50%</span>
-            <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem;">測試</button>
+            <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
+            <label>音量:</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" oninput="updateVolume()">
+            <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
+            <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
         </div>
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC版維持原本的快速登記按鈕群組 -->
-    <div class="section-title top-quick-buttons-title">⚡ 快速登記</div>
-    <div class="btn-group top-quick-buttons">
-        <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
-        <button onclick="registerBoss('將軍', new Date())">將軍</button>
-        <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
-        <button onclick="registerBoss('不死鳥', new Date())">不死鳥</button>
-        <button onclick="registerBoss('克特', new Date())">克特</button>
+    <div class="pc-widget-panel">
+        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
+        <div class="pc-widget-buttons">
+            <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
+            <button onclick="registerBoss('將軍', new Date())">將軍</button>
+            <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
+            <button onclick="registerBoss('不死鳥', new Date())">不死鳥</button>
+            <button onclick="registerBoss('克特', new Date())">克特</button>
+        </div>
     </div>
 
     <div class="section-title">📊 王表現況</div>
     
-    <!-- 電腦版維持完整表格 -->
     <table class="desktop-table">
         <thead>
             <tr>
@@ -250,7 +321,6 @@
         <tbody id="boss-table-body"></tbody>
     </table>
 
-    <!-- 手機版卡片 -->
     <div class="mobile-cards" id="boss-cards-container"></div>
 
     <div class="section-title" style="margin-top: 20px;">手動補登</div>
@@ -262,7 +332,7 @@
             <option value="不死鳥">不死鳥 (480分)</option>
             <option value="克特">克特 (600分)</option>
         </select>
-        <input type="text" id="manual-time" placeholder="例如 120215" maxlength="6" onkeydown="handleKey(event)">
+        <input type="text" id="manual-time" placeholder="輸入 4 碼或 6 碼 (例如 1605)" maxlength="6" onkeydown="handleKey(event)">
         <button onclick="manualRegister()">登記擊殺 (K)</button>
     </div>
 
@@ -284,7 +354,8 @@
     ];
 
     let bossStates = {};
-    let alertedBosses = {}; // 記錄是否已經提醒過 1 分鐘與時間到
+    let alertedBosses = {};
+    let lastVolume = 0.5;
 
     function fetchServerData(showAlert = false) {
         fetch(SERVER_URL)
@@ -323,8 +394,6 @@
         const savedVol = localStorage.getItem('alarmVolume');
         if (savedVol !== null && slider) {
             slider.value = savedVol;
-            const textElem = document.getElementById('volume-text');
-            if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
         fetchServerData(false);
@@ -333,11 +402,38 @@
     function updateVolume() {
         const slider = document.getElementById('volume-slider');
         const audio = document.getElementById('alarm-sound');
-        if (!slider || !audio) return;
-        audio.volume = slider.value;
         const textElem = document.getElementById('volume-text');
-        if (textElem) textElem.innerText = Math.round(slider.value * 100) + '%';
-        localStorage.setItem('alarmVolume', slider.value);
+        const iconElem = document.getElementById('volume-icon');
+        if (!slider || !audio || !textElem || !iconElem) return;
+
+        const vol = parseFloat(slider.value);
+        audio.volume = vol;
+        textElem.innerText = Math.round(vol * 100) + '%';
+        localStorage.setItem('alarmVolume', vol);
+
+        const percentage = vol * 100;
+        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percentage}%, #444 ${percentage}%)`;
+
+        if (vol > 0) {
+            lastVolume = vol;
+            iconElem.innerText = '🔊';
+        } else {
+            iconElem.innerText = '🔇';
+        }
+    }
+
+    function toggleMute() {
+        const slider = document.getElementById('volume-slider');
+        if (!slider) return;
+
+        const currentVol = parseFloat(slider.value);
+        if (currentVol > 0) {
+            lastVolume = currentVol;
+            slider.value = 0;
+        } else {
+            slider.value = lastVolume > 0 ? lastVolume : 0.5;
+        }
+        updateVolume();
     }
 
     function testAudio() {
@@ -353,9 +449,7 @@
 
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
-        
-        // 初始化該王的提醒狀態：1分鐘提醒與時間到提醒皆設為 false
-        alertedBosses[name] = { min1: false, zero: false };
+        alertedBosses[name] = { min1: false };
         sendToServer();
     }
 
@@ -373,14 +467,16 @@
         const selectName = selectElem.value;
         const timeInput = timeInputElem.value.trim();
 
-        if (!/^\d{6}$/.test(timeInput)) {
-            alert("請輸入正確的 6 碼時間格式，例如 120215");
+        let hours = 0, minutes = 0, seconds = 0;
+
+        if (/^\d{4}$/.test(timeInput)) {             hours = parseInt(timeInput.substring(0, 2), 10);             minutes = parseInt(timeInput.substring(2, 4), 10);             seconds = 0;         } else if (/^\d{6}$/.test(timeInput)) {
+            hours = parseInt(timeInput.substring(0, 2), 10);
+            minutes = parseInt(timeInput.substring(2, 4), 10);
+            seconds = parseInt(timeInput.substring(4, 6), 10);
+        } else {
+            alert("請輸入正確的 4 碼 (例如 1605) 或 6 碼 (例如 160530) 時間格式");
             return;
         }
-
-        const hours = parseInt(timeInput.substring(0, 2), 10);
-        const minutes = parseInt(timeInput.substring(2, 4), 10);
-        const seconds = parseInt(timeInput.substring(4, 6), 10);
 
         if (hours > 23 || minutes > 59 || seconds > 59) {
             alert("時間格式錯誤（小時 00-23，分鐘 00-59，秒數 00-59）");
@@ -408,6 +504,15 @@
         }
     }
 
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW';
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
     function updateDisplay() {
         const tbody = document.getElementById('boss-table-body');
         const cardsContainer = document.getElementById('boss-cards-container');
@@ -416,7 +521,6 @@
         tbody.innerHTML = '';
         cardsContainer.innerHTML = '';
         const now = new Date().getTime();
-        let needPlayAlarm = false;
 
         let sortedBossList = [...bossList].sort((a, b) => {
             let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
@@ -425,62 +529,74 @@
         });
 
         sortedBossList.forEach(boss => {
-            const respawnTimeMs = bossStates[boss.name];
+            let respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
             let countdownStr = "-";
+            let isOverdue = false;
             let isUrgent = false;
 
-            // 確保該王的提醒狀態物件存在
             if (!alertedBosses[boss.name]) {
-                alertedBosses[boss.name] = { min1: false, zero: false };
+                alertedBosses[boss.name] = { min1: false };
             }
 
             if (respawnTimeMs && respawnTimeMs > 0) {
-                const respawnDate = new Date(respawnTimeMs);
+                const intervalMs = boss.interval * 60000;
+                let displayRespawnTimeMs = respawnTimeMs;
+                let overdueCount = 0;
+
+                if (now > displayRespawnTimeMs) {
+                    const diffTime = now - displayRespawnTimeMs;
+                    overdueCount = Math.floor(diffTime / intervalMs) + 1;
+                    displayRespawnTimeMs += overdueCount * intervalMs;
+                }
+
+                const respawnDate = new Date(displayRespawnTimeMs);
                 timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
 
-                const diff = respawnTimeMs - now;
+                if (overdueCount > 0) {
+                    timeStr += ` (過${overdueCount})`;
+                    isOverdue = true;
+                }
 
-                if (diff <= 0) {
-                    countdownStr = "🔥 已重生 / 時間到！";
+                const diff = displayRespawnTimeMs - now;
+
+                if (diff <= 60000 && diff > 0 && !alertedBosses[boss.name].min1) {
+                    alertedBosses[boss.name].min1 = true;
+                    speakText(`${boss.name}預計一分鐘後重生`);
+                }
+
+                if (diff <= 60000) {
                     isUrgent = true;
-                    if (!alertedBosses[boss.name].zero) {
-                        needPlayAlarm = true;
-                        alertedBosses[boss.name].zero = true;
-                    }
-                } else {
-                    // 💡 檢查是否進入最後 1 分鐘（介於 0 到 60,000 毫秒之間）
-                    if (diff <= 60000 && !alertedBosses[boss.name].min1) {
-                        needPlayAlarm = true;
-                        alertedBosses[boss.name].min1 = true; // 標記 1 分鐘已提醒過
-                    }
+                }
 
-                    const totalSec = Math.floor(diff / 1000);
-                    const hours = Math.floor(totalSec / 3600);
-                    const minutes = Math.floor((totalSec % 3600) / 60);
-                    const seconds = totalSec % 60;
+                const totalSec = Math.floor(Math.abs(diff) / 1000);
+                const hours = Math.floor(totalSec / 3600);
+                const minutes = Math.floor((totalSec % 3600) / 60);
+                const seconds = totalSec % 60;
+
+                if (diff < 0) {
+                    countdownStr = `-${hours}時 ${minutes}分 ${seconds}秒`;
+                } else {
                     countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
                 }
             }
 
-            // 電腦版維持原本的表格列
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><b>${boss.name}</b></td>
                 <td>${boss.interval}分</td>
-                <td>${timeStr}</td>
+                <td style="${isOverdue ? 'color: #f87171;' : ''}">${timeStr}</td>
                 <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
 
-            // 手機版卡片
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
                 <button class="btn-quick-item" onclick="registerBoss('${boss.name}', new Date())">${boss.name}</button>
                 <div class="boss-card-info">
                     <div class="boss-card-header">
-                        <span>預計: ${timeStr}</span>
+                        <span style="${isOverdue ? 'color: #f87171;' : ''}">預計: ${timeStr}</span>
                         <span>${boss.interval}分</span>
                     </div>
                     <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
@@ -488,14 +604,6 @@
             `;
             cardsContainer.appendChild(card);
         });
-
-        if (needPlayAlarm) {
-            const audio = document.getElementById('alarm-sound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(e => console.log("等待互動解鎖音效"));
-            }
-        }
     }
 
     function pad(n) {
