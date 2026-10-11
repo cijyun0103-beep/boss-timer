@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.3</title>
+    <title>天堂M 王表系統 v4.4</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -74,7 +74,6 @@
             opacity: 0.7;
         }
 
-        /* 💡 徹底根除所有瀏覽器預設的外框、焦點藍圈與陰影 */
         .settings-bar input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -112,10 +111,6 @@
 
         .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
             transform: scale(1.1);
-        }
-
-        .settings-bar input[type="range"]::-moz-focus-outer {
-            border: 0;
         }
 
         .btn-refresh {
@@ -283,7 +278,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.3</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.4</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -344,6 +339,7 @@
 <script>
     const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
     const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
+    const DISCORD_API_URL = 'https://boss-timer-9c6e.onrender.com/api/discord-alert';
 
     const bossList = [
         { name: "死亡騎士", interval: 240 },
@@ -387,6 +383,17 @@
             }
         })
         .catch(err => console.log("上傳至雲端伺服器失敗"));
+    }
+
+    // 💡 透過後端發送 Discord 訊息
+    function sendDiscordAlert(bossName, timeStr) {
+        fetch(DISCORD_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: `🚨 **[天堂M 王表通知]** 警告！**${bossName}** 將於 1 分鐘後（${timeStr}）重生，請血盟成員準備集合！`
+            })
+        }).catch(err => console.log("Discord 警報發送失敗"));
     }
 
     function initUI() {
@@ -560,9 +567,11 @@
 
                 const diff = displayRespawnTimeMs - now;
 
+                // 💡 當倒數剩 1 分鐘以內且大於 0 時，同時觸發語音與 Discord 通知
                 if (diff <= 60000 && diff > 0 && !alertedBosses[boss.name].min1) {
                     alertedBosses[boss.name].min1 = true;
                     speakText(`${boss.name}預計一分鐘後重生`);
+                    sendDiscordAlert(boss.name, timeStr);
                 }
 
                 if (diff <= 60000) {
