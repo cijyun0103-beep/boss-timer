@@ -1,101 +1,636 @@
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-
-let bossStates = {};
-let notifiedOneMin = {};
-
-// 你的 Discord Webhook 網址
-const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK';
-
-async function sendDiscordNotification(message) {
-    if (!DISCORD_WEBHOOK_URL) return;
-    try {
-        const response = await fetch(DISCORD_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: message })
-        });
-        
-        const responseText = await response.text();
-        console.log(`[Discord 狀態] 碼: ${response.status}, 回應: ${responseText}`);
-    } catch (err) {
-        console.log("[Discord 錯誤] 發送失敗:", err);
-    }
-}
-
-// 💡 測試路由：只要在瀏覽器打開你的 Render 網址 /test-discord 就能立刻測試 Discord 是否會跳出訊息
-app.get('/test-discord', async (req, res) => {
-    await sendDiscordNotification("🚨 **[測試訊息]** 機器人連線成功！Discord Webhook 運作正常！");
-    res.send("已嘗試發送 Discord 測試訊息，請檢查頻道！");
-});
-
-// 取得目前的王表狀態
-app.get('/api/bosses', (req, res) => {
-    res.json({ bossStates });
-});
-
-// 更新王表狀態
-app.post('/api/bosses', (req, res) => {
-    if (req.body && req.body.states) {
-        bossStates = req.body.states;
-        res.json({ success: true, bossStates });
-    } else {
-        res.status(400).json({ success: false, error: 'Invalid data' });
-    }
-});
-
-// 全部重置
-app.post('/api/reset', (req, res) => {
-    bossStates = {};
-    notifiedOneMin = {};
-    res.json({ success: true, bossStates });
-});
-
-// 背景定時檢查
-const bossIntervals = {
-    "死亡騎士": 240,
-    "將軍": 360,
-    "古代巨人": 510,
-    "不死鳥": 480,
-    "克特": 600
-};
-
-setInterval(() => {
-    const now = new Date().getTime();
-
-    for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
-        if (!respawnTimeMs) continue;
-        const intervalMs = (bossIntervals[name] || 240) * 60000;
-        let displayRespawnTime = respawnTimeMs;
-
-        if (now > displayRespawnTime) {
-            const diffTime = now - displayRespawnTime;
-            const overdueCount = Math.floor(diffTime / intervalMs) + 1;
-            displayRespawnTime += overdueCount * intervalMs;
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天堂M 王表系統 v4.5</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --border-color: #333;
         }
 
-        const diff = displayRespawnTime - now;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
 
-        // 當剩餘時間在 50 秒到 60 秒之間時觸發
-        if (diff <= 60000 && diff > 50000) {
-            if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
-                notifiedOneMin[name] = displayRespawnTime;
-                const respawnDate = new Date(displayRespawnTime);
-                const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
-                
-                sendDiscordNotification(`🚨 **[天堂M 王表通知]** 警告！**${name}** 將於 1 分鐘後（${timeStr}）重生，請血盟成員準備集合！`);
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .settings-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.85rem;
+            background: #1a1a1a;
+            padding: 6px 12px;
+            border-radius: 6px;
+            width: fit-content;
+        }
+
+        .volume-icon {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1rem;
+            transition: opacity 0.2s;
+        }
+        .volume-icon:hover {
+            opacity: 0.7;
+        }
+
+        .settings-bar input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 140px;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none !important;
+            cursor: pointer;
+            margin: 0 4px;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        .settings-bar input[type="range"]:focus,
+        .settings-bar input[type="range"]:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            transition: transform 0.1s;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-refresh {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-refresh:hover {
+            background-color: var(--success-hover);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #93c5fd;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .manual-section {
+            display: flex;
+            gap: 10px;
+            background: #252525;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        select, input {
+            background: #333;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .pc-widget-panel {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pc-widget-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pc-widget-buttons button {
+            flex: 1;
+            min-width: 110px;
+            padding: 8px 10px;
+            font-size: 0.95rem;
+        }
+
+        .desktop-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .desktop-table th, .desktop-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+        .desktop-table th {
+            background-color: #2a2a2a;
+        }
+
+        .mobile-cards {
+            display: none;
+        }
+
+        .btn-quick-item {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-quick-item:hover {
+            background-color: var(--accent-hover);
+        }
+
+        @media screen and (max-width: 768px) {
+            .settings-bar { display: none !important; }
+            .desktop-table { display: none !important; }
+            .pc-widget-panel { display: none !important; }
+            .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+            .boss-card {
+                background: #262626;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .boss-card-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .boss-card-header {
+                font-weight: bold;
+                font-size: 0.95rem;
+                color: #999;
+                display: flex;
+                justify-content: space-between;
+            }
+            .boss-card-countdown {
+                font-size: 1.05rem;
+                font-weight: bold;
+                color: #f87171;
+            }
+            
+            .manual-section {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
-    }
-}, 5000);
+    </style>
+</head>
+<body>
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+<div class="container">
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.5</span></h2>
+
+    <div class="top-bar">
+        <div class="settings-bar">
+            <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
+            <label>音量:</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" oninput="updateVolume()">
+            <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
+            <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
+        </div>
+        <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
+    </div>
+
+    <div class="pc-widget-panel">
+        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
+        <div class="pc-widget-buttons">
+            <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
+            <button onclick="registerBoss('將軍', new Date())">將軍</button>
+            <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
+            <button onclick="registerBoss('不死鳥', new Date())">不死鳥</button>
+            <button onclick="registerBoss('克特', new Date())">克特</button>
+        </div>
+    </div>
+
+    <div class="section-title">📊 王表現況</div>
+    
+    <table class="desktop-table">
+        <thead>
+            <tr>
+                <th>BOSS 名稱</th>
+                <th>間隔</th>
+                <th>預計重生時間</th>
+                <th>剩餘倒數</th>
+            </tr>
+        </thead>
+        <tbody id="boss-table-body"></tbody>
+    </table>
+
+    <div class="mobile-cards" id="boss-cards-container"></div>
+
+    <div class="section-title" style="margin-top: 20px;">手動補登</div>
+    <div class="manual-section">
+        <select id="boss-select">
+            <option value="死亡騎士">死亡騎士 (240分)</option>
+            <option value="將軍">將軍 (360分)</option>
+            <option value="古代巨人">古代巨人 (510分)</option>
+            <option value="不死鳥">不死鳥 (480分)</option>
+            <option value="克特">克特 (600分)</option>
+        </select>
+        <input type="text" id="manual-time" placeholder="輸入 4 碼或 6 碼 (例如 1605)" maxlength="6" onkeydown="handleKey(event)">
+        <button onclick="manualRegister()">登記擊殺 (K)</button>
+    </div>
+
+    <button class="btn-danger" onclick="resetAll()">全部重置</button>
+</div>
+
+<audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+<script>
+    const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
+    const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
+    
+    // 💡 直接寫在前端的 Discord Webhook 網址
+    const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK';
+
+    const bossList = [
+        { name: "死亡騎士", interval: 240 },
+        { name: "將軍", interval: 360 },
+        { name: "古代巨人", interval: 510 },
+        { name: "不死鳥", interval: 480 },
+        { name: "克特", interval: 600 }
+    ];
+
+    let bossStates = {};
+    let alertedBosses = {};
+    let lastVolume = 0.5;
+
+    function fetchServerData(showAlert = false) {
+        fetch(SERVER_URL)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.bossStates) {
+                    bossStates = data.bossStates;
+                    updateDisplay();
+                    if (showAlert) alert("✅ 已成功從雲端伺服器同步資料！");
+                }
+            })
+            .catch(err => {
+                if (showAlert) alert("⚠️ 無法連線至雲端伺服器。");
+            });
+    }
+
+    function sendToServer() {
+        fetch(SERVER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ states: bossStates })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateDisplay();
+            }
+        })
+        .catch(err => console.log("上傳至雲端伺服器失敗"));
+    }
+
+    // 💡 前端直接發送 Discord 通知
+    function sendDiscordAlert(bossName, timeStr) {
+        if (!DISCORD_WEBHOOK_URL) return;
+        fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: `🚨 **[天堂M 王表通知]** 警告！**${bossName}** 將於 1 分鐘後（${timeStr}）重生，請血盟成員準備集合！`
+            })
+        }).catch(err => console.log("Discord 通知發送失敗"));
+    }
+
+    function initUI() {
+        const slider = document.getElementById('volume-slider');
+        const savedVol = localStorage.getItem('alarmVolume');
+        if (savedVol !== null && slider) {
+            slider.value = savedVol;
+        }
+        updateVolume();
+        fetchServerData(false);
+    }
+
+    function updateVolume() {
+        const slider = document.getElementById('volume-slider');
+        const audio = document.getElementById('alarm-sound');
+        const textElem = document.getElementById('volume-text');
+        const iconElem = document.getElementById('volume-icon');
+        if (!slider || !audio || !textElem || !iconElem) return;
+
+        const vol = parseFloat(slider.value);
+        audio.volume = vol;
+        textElem.innerText = Math.round(vol * 100) + '%';
+        localStorage.setItem('alarmVolume', vol);
+
+        const percentage = vol * 100;
+        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percentage}%, #444 ${percentage}%)`;
+
+        if (vol > 0) {
+            lastVolume = vol;
+            iconElem.innerText = '🔊';
+        } else {
+            iconElem.innerText = '🔇';
+        }
+    }
+
+    function toggleMute() {
+        const slider = document.getElementById('volume-slider');
+        if (!slider) return;
+
+        const currentVol = parseFloat(slider.value);
+        if (currentVol > 0) {
+            lastVolume = currentVol;
+            slider.value = 0;
+        } else {
+            slider.value = lastVolume > 0 ? lastVolume : 0.5;
+        }
+        updateVolume();
+    }
+
+    function testAudio() {
+        const audio = document.getElementById('alarm-sound');
+        if (!audio) return;
+        audio.currentTime = 0;
+        audio.play().catch(e => alert("請先在畫面任意處點擊一下解鎖音效！"));
+        
+        // 測試時順便發送一則 Discord 測試訊息
+        sendDiscordAlert("測試王", "12:00:00");
+    }
+
+    function registerBoss(name, targetDate) {
+        const boss = bossList.find(b => b.name === name);
+        if (!boss) return;
+
+        const respawnTime = targetDate.getTime() + boss.interval * 60000;
+        bossStates[name] = respawnTime;
+        alertedBosses[name] = { min1: false };
+        sendToServer();
+    }
+
+    function handleKey(event) {
+        if (event.key === 'Enter') {
+            manualRegister();
+        }
+    }
+
+    function manualRegister() {
+        const selectElem = document.getElementById('boss-select');
+        const timeInputElem = document.getElementById('manual-time');
+        if (!selectElem || !timeInputElem) return;
+
+        const selectName = selectElem.value;
+        const timeInput = timeInputElem.value.trim();
+
+        let hours = 0, minutes = 0, seconds = 0;
+
+        if (/^\d{4}$/.test(timeInput)) {             hours = parseInt(timeInput.substring(0, 2), 10);             minutes = parseInt(timeInput.substring(2, 4), 10);             seconds = 0;         } else if (/^\d{6}$/.test(timeInput)) {
+            hours = parseInt(timeInput.substring(0, 2), 10);
+            minutes = parseInt(timeInput.substring(2, 4), 10);
+            seconds = parseInt(timeInput.substring(4, 6), 10);
+        } else {
+            alert("請輸入正確的 4 碼 (例如 1605) 或 6 碼 (例如 160530) 時間格式");
+            return;
+        }
+
+        if (hours > 23 || minutes > 59 || seconds > 59) {
+            alert("時間格式錯誤（小時 00-23，分鐘 00-59，秒數 00-59）");
+            return;
+        }
+
+        const now = new Date();
+        const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
+
+        registerBoss(selectName, targetDate);
+        timeInputElem.value = '';
+    }
+
+    function resetAll() {
+        if (confirm("確定要重置所有王的計時嗎？")) {
+            fetch(RESET_URL, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        bossStates = {};
+                        alertedBosses = {};
+                        updateDisplay();
+                    }
+                });
+        }
+    }
+
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW';
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function updateDisplay() {
+        const tbody = document.getElementById('boss-table-body');
+        const cardsContainer = document.getElementById('boss-cards-container');
+        if (!tbody || !cardsContainer) return;
+
+        tbody.innerHTML = '';
+        cardsContainer.innerHTML = '';
+        const now = new Date().getTime();
+
+        let sortedBossList = [...bossList].sort((a, b) => {
+            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
+            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
+            return timeA - timeB;
+        });
+
+        sortedBossList.forEach(boss => {
+            let respawnTimeMs = bossStates[boss.name];
+            let timeStr = "尚未登記";
+            let countdownStr = "-";
+            let isOverdue = false;
+            let isUrgent = false;
+
+            if (!alertedBosses[boss.name]) {
+                alertedBosses[boss.name] = { min1: false };
+            }
+
+            if (respawnTimeMs && respawnTimeMs > 0) {
+                const intervalMs = boss.interval * 60000;
+                let displayRespawnTimeMs = respawnTimeMs;
+                let overdueCount = 0;
+
+                if (now > displayRespawnTimeMs) {
+                    const diffTime = now - displayRespawnTimeMs;
+                    overdueCount = Math.floor(diffTime / intervalMs) + 1;
+                    displayRespawnTimeMs += overdueCount * intervalMs;
+                }
+
+                const respawnDate = new Date(displayRespawnTimeMs);
+                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
+
+                if (overdueCount > 0) {
+                    timeStr += ` (過${overdueCount})`;
+                    isOverdue = true;
+                }
+
+                const diff = displayRespawnTimeMs - now;
+
+                // 💡 當倒數剩 1 分鐘以內且大於 0 時，前端直接發送語音與 Discord 通知
+                if (diff <= 60000 && diff > 0 && !alertedBosses[boss.name].min1) {
+                    alertedBosses[boss.name].min1 = true;
+                    speakText(`${boss.name}預計一分鐘後重生`);
+                    sendDiscordAlert(boss.name, timeStr);
+                }
+
+                if (diff <= 60000) {
+                    isUrgent = true;
+                }
+
+                const totalSec = Math.floor(Math.abs(diff) / 1000);
+                const hours = Math.floor(totalSec / 3600);
+                const minutes = Math.floor((totalSec % 3600) / 60);
+                const seconds = totalSec % 60;
+
+                if (diff < 0) {
+                    countdownStr = `-${hours}時 ${minutes}分 ${seconds}秒`;
+                } else {
+                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
+                }
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><b>${boss.name}</b></td>
+                <td>${boss.interval}分</td>
+                <td style="${isOverdue ? 'color: #f87171;' : ''}">${timeStr}</td>
+                <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
+            `;
+            tbody.appendChild(tr);
+
+            const card = document.createElement('div');
+            card.className = 'boss-card';
+            card.innerHTML = `
+                <button class="btn-quick-item" onclick="registerBoss('${boss.name}', new Date())">${boss.name}</button>
+                <div class="boss-card-info">
+                    <div class="boss-card-header">
+                        <span style="${isOverdue ? 'color: #f87171;' : ''}">預計: ${timeStr}</span>
+                        <span>${boss.interval}分</span>
+                    </div>
+                    <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        });
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : n;
+    }
+
+    window.onload = function() {
+        initUI();
+        setInterval(updateDisplay, 1000);
+        setInterval(() => fetchServerData(false), 3000);
+    };
+</script>
+
+</body>
+</html>
