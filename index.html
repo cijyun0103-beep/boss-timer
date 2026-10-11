@@ -316,40 +316,46 @@
         { name: "克特", interval: 600 }
     ];
 
-    let bossStates = {};
+    // 初始化：先從本地讀取，確保一開網頁有資料可看，絕不盲目歸零
+    let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
     let alertedBosses = {};
 
-    // 核心：從雲端抓取最新數據
     function fetchCloudData(showAlert = false) {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
                     let newStates = {};
-                    let hasData = false;
+                    let hasValidData = false;
+                    
                     for (let key in data) {
                         if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
                             newStates[key] = data[key];
-                            hasData = true;
+                            hasValidData = true;
                         }
                     }
-                    // 只要雲端有有效資料就採用
-                    if (hasData) {
+
+                    // 💡 防呆核心：唯有當雲端「確實有資料」時才覆蓋本機；若雲端是空的，則「完整保留本機現狀」，絕不歸零！
+                    if (hasValidData) {
                         bossStates = newStates;
+                        localStorage.setItem('bossStates', JSON.stringify(bossStates));
+                        updateDisplay();
+                        if (showAlert) alert("✅ 成功從雲端同步最新王表！");
                     } else {
-                        bossStates = {}; // 雲端若為空則清空
+                        if (showAlert) alert("ℹ️ 雲端目前沒有資料，維持本機顯示。");
                     }
-                    updateDisplay();
-                    if (showAlert) alert("✅ 已成功從雲端同步最新王表！");
                 }
             })
             .catch(err => {
-                if (showAlert) alert("⚠️ 雲端連線失敗，請檢查網路。");
+                if (showAlert) alert("⚠️ 雲端連線失敗，目前顯示本機資料。");
             });
     }
 
-    // 核心：將變更直接寫入雲端
     function saveToCloud() {
+        // 同時存入本機與雲端
+        localStorage.setItem('bossStates', JSON.stringify(bossStates));
+        updateDisplay();
+
         let payload = { ...bossStates, _updatedAt: new Date().getTime() };
 
         fetch(API_URL, {
@@ -358,9 +364,6 @@
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
-        })
-        .then(() => {
-            fetchCloudData(); // 寫入後立即重新抓取確認
         })
         .catch(err => console.log("寫入雲端失敗"));
     }
@@ -374,7 +377,8 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-        fetchCloudData(); // 一開網頁就從雲端抓取
+        updateDisplay();
+        fetchCloudData(false); // 開啟時在背景安靜抓取一次雲端
     }
 
     function updateVolume() {
@@ -401,7 +405,7 @@
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
         alertedBosses[name] = false;
-        saveToCloud(); // 立即存入雲端
+        saveToCloud();
     }
 
     function manualRegister() {
@@ -436,7 +440,7 @@
         if (confirm("確定要重置所有王的計時嗎？")) {
             bossStates = {};
             alertedBosses = {};
-            saveToCloud(); // 雲端清空
+            saveToCloud();
         }
     }
 
@@ -545,7 +549,7 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
-        setInterval(() => fetchCloudData(false), 5000); // 每 5 秒自動向雲端同步
+        setInterval(() => fetchCloudData(false), 5000); // 每 5 秒自動跟雲端同步
     };
 </script>
 
