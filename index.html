@@ -291,23 +291,37 @@
         { name: "克特", interval: 600 }
     ];
 
-    // 優先從瀏覽器本機快取讀取，確保重新整理絕對不會消失
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
     let alertedBosses = {};
 
+    // 從雲端同步資料（智慧合併：保留既有倒數時間，絕不無故歸零）
     function fetchCloudData() {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
-                if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-                    bossStates = data;
-                    localStorage.setItem('bossStates', JSON.stringify(bossStates));
-                    updateDisplay();
+                if (data && typeof data === 'object') {
+                    // 如果雲端是完全重置的空物件 {}，且本地有資料，則不動
+                    if (Object.keys(data).length === 0) {
+                        return;
+                    }
+                    // 只有當雲端有明確的時間記錄時才同步更新
+                    let hasNewData = false;
+                    for (let key in data) {
+                        if (data[key] && data[key] > 0) {
+                            bossStates[key] = data[key];
+                            hasNewData = true;
+                        }
+                    }
+                    if (hasNewData) {
+                        localStorage.setItem('bossStates', JSON.stringify(bossStates));
+                        updateDisplay();
+                    }
                 }
             })
             .catch(err => console.log("同步雲端失敗"));
     }
 
+    // 將資料推送到雲端
     function saveCloudData() {
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
         fetch(API_URL, {
@@ -392,7 +406,14 @@
         if (confirm("確定要重置所有王的計時嗎？")) {
             bossStates = {};
             alertedBosses = {};
-            saveAndRefresh();
+            // 發送空物件到雲端，實現雙向重置同步
+            localStorage.setItem('bossStates', JSON.stringify({}));
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            }).catch(err => console.log("重置雲端失敗"));
+            updateDisplay();
         }
     }
 
@@ -417,7 +438,7 @@
             let countdownStr = "-";
             let isUrgent = false;
 
-            if (respawnTimeMs) {
+            if (respawnTimeMs && respawnTimeMs > 0) {
                 const respawnDate = new Date(respawnTimeMs);
                 timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
 
@@ -460,7 +481,7 @@
             let countdownStr = "-";
             let isUrgent = false;
 
-            if (respawnTimeMs) {
+            if (respawnTimeMs && respawnTimeMs > 0) {
                 const respawnDate = new Date(respawnTimeMs);
                 timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
 
@@ -506,7 +527,7 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
-        setInterval(fetchCloudData, 5000);
+        setInterval(fetchCloudData, 5000); // 每 5 秒同步一次
     };
 </script>
 
