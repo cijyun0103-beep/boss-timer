@@ -171,7 +171,7 @@
                 flex-direction: column;
             }
 
-            /* 快速登記按鈕改成 2 欄網格，尺寸完全統一，最後一顆置中或延展 */
+            /* 快速登記按鈕改成嚴格的 2 欄網格，尺寸完全統一 */
             .btn-group {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -207,7 +207,7 @@
             .section-title:nth-of-type(3) { order: 5; }
             .mobile-cards { order: 6; }
 
-            /* 將「全部重置」按鈕強制排到最下方 */
+            /* 全部重置按鈕移至最下方 */
             .btn-danger {
                 order: 7;
                 margin-top: 15px;
@@ -372,6 +372,7 @@
         const now = new Date().getTime();
         let needPlayAlarm = false;
 
+        // 電腦版維持原樣呈現
         bossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
@@ -407,6 +408,37 @@
                 <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
+        });
+
+        // 手機版：依照預計重生時間排序（未登記的排在最後面）
+        let sortedBossList = [...bossList].sort((a, b) => {
+            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
+            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
+            return timeA - timeB;
+        });
+
+        sortedBossList.forEach(boss => {
+            const respawnTimeMs = bossStates[boss.name];
+            let timeStr = "尚未登記";
+            let countdownStr = "-";
+            let isUrgent = false;
+
+            if (respawnTimeMs) {
+                const respawnDate = new Date(respawnTimeMs);
+                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
+
+                const diff = respawnTimeMs - now;
+                if (diff <= 0) {
+                    countdownStr = "🔥 已重生 / 時間到！";
+                    isUrgent = true;
+                } else {
+                    const totalSec = Math.floor(diff / 1000);
+                    const hours = Math.floor(totalSec / 3600);
+                    const minutes = Math.floor((totalSec % 3600) / 60);
+                    const seconds = totalSec % 60;
+                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
+                }
+            }
 
             const card = document.createElement('div');
             card.className = 'boss-card';
