@@ -30,6 +30,12 @@ async function sendDiscordNotification(message) {
     }
 }
 
+// 💡 測試路由：只要在瀏覽器打開你的 Render 網址 /test-discord 就能立刻測試 Discord 是否會跳出訊息
+app.get('/test-discord', async (req, res) => {
+    await sendDiscordNotification("🚨 **[測試訊息]** 機器人連線成功！Discord Webhook 運作正常！");
+    res.send("已嘗試發送 Discord 測試訊息，請檢查頻道！");
+});
+
 // 取得目前的王表狀態
 app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
@@ -77,7 +83,7 @@ setInterval(() => {
 
         const diff = displayRespawnTime - now;
 
-        // 當剩餘時間在 50 秒到 60 秒之間時觸發，確保不會漏掉
+        // 當剩餘時間在 50 秒到 60 秒之間時觸發
         if (diff <= 60000 && diff > 50000) {
             if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
                 notifiedOneMin[name] = displayRespawnTime;
@@ -88,7 +94,7 @@ setInterval(() => {
             }
         }
     }
-}, 5000); // 每 5 秒檢查一次
+}, 5000);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
