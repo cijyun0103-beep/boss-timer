@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.5</title>
+    <title>天堂M 王表系統 v4.6</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -71,9 +71,30 @@
         }
 
         .settings-bar input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
             width: 140px;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none !important;
             cursor: pointer;
             margin: 0 4px;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
         }
 
         .btn-refresh {
@@ -190,7 +211,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.5</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.6</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -304,6 +325,9 @@
         const vol = parseInt(slider.value, 10);
         textElem.innerText = vol + '%';
         localStorage.setItem('alarmVolume', vol);
+
+        const percentage = vol;
+        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percentage}%, #444 ${percentage}%)`;
 
         if (vol > 0) {
             lastVolume = vol;
