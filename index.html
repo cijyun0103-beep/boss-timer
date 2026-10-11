@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.4</title>
+    <title>天堂M 王表系統 v6.7</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,6 +177,7 @@
             flex: 1;
         }
 
+        /* 快速登記小工具（手機與電腦同步顯示） */
         .pc-widget-panel {
             background: #18181b;
             border: 1px solid #27272a;
@@ -227,8 +228,6 @@
         }
 
         @media screen and (max-width: 768px) {
-            /* 修正：移除隱藏 desktop-table 的設定，讓手機也能正常顯示王表 */
-            .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
         }
     </style>
@@ -236,7 +235,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.4</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.7</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -249,7 +248,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具 -->
+    <!-- 快速登記小工具（手機與電腦同步顯示） -->
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
@@ -436,7 +435,7 @@
 
         if (hours > 23 || minutes > 59 || seconds > 59) {
             alert("輸入的時間不合法！");
-            return;
+    return;
         }
 
         let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
