@@ -12,11 +12,11 @@ let bossStates = {};
 let notifiedOneMin = {};
 
 const bossIntervals = {
-    "死亡騎士": 240,
-    "將軍": 360,
-    "古代巨人": 510,
-    "不死鳥": 480,
-    "克特": 600
+    "死亡騎士": 240, // 4小時
+    "將軍": 360,     // 6小時
+    "古代巨人": 510, // 8.5小時
+    "不死鳥": 480,   // 8小時
+    "克特": 600      // 10小時
 };
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -56,7 +56,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
                 if (reaction.emoji.name === '💩') {
-                    // 確保點擊 Discord 💩 反應時，擊殺時間一律為「當下」按按鈕的時間
+                    //  Discord 💩 反應一律視為當下即時擊殺
                     const now = new Date();
                     const killTimeMs = now.getTime();
                     const intervalMs = bossIntervals[bossName] * 60000;
@@ -83,18 +83,24 @@ app.get('/api/bosses', (req, res) => {
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         const oldStates = { ...bossStates };
-        bossStates = req.body.states;
+        const incomingStates = req.body.states;
+        const now = new Date().getTime();
 
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-        if (channel) {
-            const now = new Date().getTime();
-            for (const [bossName, newRespawnTime] of Object.entries(bossStates)) {
-                if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
-                    const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                    const killTimeMs = newRespawnTime - intervalMs;
-                    if (Math.abs(now - killTimeMs) < 600000) { 
-                        await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
-                    }
+
+        for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
+            if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
+                const intervalMs = (bossIntervals[bossName] || 240) * 60000;
+                let killTimeMs = newRespawnTime - intervalMs;
+
+                // 如果傳過來的重生時間算出來的擊殺時間距離現在超過 10 分鐘，
+                // 代表這可能是手動補登的時間，我們不強制覆蓋為當下，但如果是點擊按鈕產生的，則以當下為準
+                // 這裡我們直接信任前端傳來的精確時間，並根據是否為近 10 分鐘內決定是否發送即時通知
+                bossStates[bossName] = newRespawnTime;
+                notifiedOneMin[bossName] = false;
+
+                if (channel && Math.abs(now - killTimeMs) < 600000) {
+                    await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
                 }
             }
         }

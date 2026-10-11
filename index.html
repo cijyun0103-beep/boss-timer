@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v5.1</title>
+    <title>天堂M 王表系統 v5.4</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -206,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.1</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.4</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -270,40 +270,23 @@
     let bossStates = {};
     let volume = 0.5;
     let isMuted = false;
-    let audioCtx = null;
     let notifiedLocalOneMin = {};
 
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    function playBeep(frequency = 800, duration = 0.2, type = 'sine') {
+    // 語音播報功能
+    function speakText(text) {
         if (isMuted || volume <= 0) return;
-        try {
-            initAudio();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = frequency;
-            gain.gain.setValueAtTime(volume * 0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        } catch (e) {
-            console.log("音效播放失敗", e);
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW';
+            utterance.volume = volume;
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
         }
     }
 
     function testAudio() {
-        initAudio();
-        playBeep(1000, 0.3);
+        speakText("音效測試正常");
     }
 
     function updateVolume() {
@@ -376,7 +359,6 @@
             });
     }
 
-    // 快速登記小工具：擊殺時間強制抓取「按下按鈕當下的系統時間」
     function registerBoss(bossName) {
         const now = new Date();
         const intervalMins = bossIntervals[bossName];
@@ -466,8 +448,8 @@
                 if (diff > 0 && diff <= 60000) {
                     if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
                         notifiedLocalOneMin[name] = respawnTimeMs;
-                        playBeep(800, 0.4);
-                        setTimeout(() => playBeep(1200, 0.4), 300);
+                        // 僅使用語音播報：【某某王】將於一分鐘內重生
+                        speakText(`${name}將於一分鐘內重生`);
                     }
                 }
 
