@@ -178,7 +178,6 @@
                 font-size: 1rem !important;
                 box-sizing: border-box !important;
             }
-            /* 最後一顆（克特）跨滿兩欄，保持完美對稱 */
             .btn-group button:nth-child(5) {
                 grid-column: span 2 !important;
             }
@@ -223,6 +222,7 @@
 
     <div class="section-title" style="margin-top: 20px;">📊 王表現況</div>
     
+    <!-- 電腦版表格（保證完整渲染） -->
     <table class="desktop-table">
         <thead>
             <tr>
@@ -235,6 +235,7 @@
         <tbody id="boss-table-body"></tbody>
     </table>
 
+    <!-- 手機版卡片容器 -->
     <div class="mobile-cards" id="boss-cards-container"></div>
 </div>
 
@@ -342,7 +343,7 @@
         const now = new Date().getTime();
         let needPlayAlarm = false;
 
-        // 電腦版與手機版共用統一的順序渲染（維持原本陣列順序）
+        // 1. 電腦版：標準表格渲染與原始順序
         bossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
@@ -370,7 +371,6 @@
                 }
             }
 
-            // 1. 電腦版表格列
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><b>${boss.name}</b></td>
@@ -379,8 +379,38 @@
                 <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
+        });
 
-            // 2. 手機版卡片
+        // 2. 手機版：卡片渲染並自動依重生時間排序
+        let sortedMobileList = [...bossList].sort((a, b) => {
+            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
+            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
+            return timeA - timeB;
+        });
+
+        sortedMobileList.forEach(boss => {
+            const respawnTimeMs = bossStates[boss.name];
+            let timeStr = "尚未登記";
+            let countdownStr = "-";
+            let isUrgent = false;
+
+            if (respawnTimeMs) {
+                const respawnDate = new Date(respawnTimeMs);
+                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
+
+                const diff = respawnTimeMs - now;
+                if (diff <= 0) {
+                    countdownStr = "🔥 已重生 / 時間到！";
+                    isUrgent = true;
+                } else {
+                    const totalSec = Math.floor(diff / 1000);
+                    const hours = Math.floor(totalSec / 3600);
+                    const minutes = Math.floor((totalSec % 3600) / 60);
+                    const seconds = totalSec % 60;
+                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
+                }
+            }
+
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
