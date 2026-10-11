@@ -160,11 +160,30 @@
             margin-top: 4px;
         }
 
+        /* 專門優化手機版（螢幕小於 768px）的排版，不影響 PC 版 */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
             .mobile-cards { display: flex !important; }
-            button { padding: 12px; font-size: 1.05rem; }
+
+            /* 讓手機快速登記按鈕變大更好點 */
+            .btn-group button {
+                flex: 1 1 calc(50% - 6px);
+                padding: 12px;
+                font-size: 1.05rem;
+            }
+
+            /* 讓手機手動補登區塊垂直排列，避免擠壓 */
+            .manual-section {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .manual-section select, 
+            .manual-section input, 
+            .manual-section button {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -215,9 +234,7 @@
                 <th>剩餘倒數</th>
             </tr>
         </thead>
-        <tbody id="boss-table-body">
-            <!-- 這裡會由 JS 動態填入 -->
-        </tbody>
+        <tbody id="boss-table-body"></tbody>
     </table>
 
     <div class="mobile-cards" id="boss-cards-container"></div>
@@ -354,7 +371,6 @@
                 }
             }
 
-            // 1. 填入電腦版表格
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><b>${boss.name}</b></td>
@@ -364,7 +380,6 @@
             `;
             tbody.appendChild(tr);
 
-            // 2. 填入手機版卡片
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
@@ -391,7 +406,6 @@
         return n < 10 ? '0' + n : n;
     }
 
-    // 頁面載入完成後初始化並每秒更新
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
