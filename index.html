@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.7</title>
+    <title>天堂M 王表系統 v6.8</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,27 +177,9 @@
             flex: 1;
         }
 
-        /* 快速登記小工具（手機與電腦同步顯示） */
+        /* 根據你的要求：完全取消上方快速登記小工具 */
         .pc-widget-panel {
-            background: #18181b;
-            border: 1px solid #27272a;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .pc-widget-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .pc-widget-buttons button {
-            flex: 1;
-            min-width: 110px;
-            padding: 8px 10px;
-            font-size: 0.95rem;
+            display: none !important;
         }
 
         .desktop-table {
@@ -213,6 +195,22 @@
         }
         .desktop-table th {
             background-color: #2a2a2a;
+        }
+
+        /* 將 BOSS 名稱變成可點擊的快速登記按鈕 */
+        .boss-click-btn {
+            background: none;
+            border: none;
+            color: #60a5fa;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0;
+            text-align: left;
+            text-decoration: underline;
+        }
+        .boss-click-btn:hover {
+            color: #93c5fd;
         }
 
         /* 倒數小於1分鐘的紅色樣式 */
@@ -235,7 +233,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.7</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.8</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -248,19 +246,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- 快速登記小工具（手機與電腦同步顯示） -->
-    <div class="pc-widget-panel">
-        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
-        <div class="pc-widget-buttons">
-            <button onclick="registerBoss('死亡騎士')">死亡騎士</button>
-            <button onclick="registerBoss('將軍')">將軍</button>
-            <button onclick="registerBoss('古代巨人')">古代巨人</button>
-            <button onclick="registerBoss('不死鳥')">不死鳥</button>
-            <button onclick="registerBoss('克特')">克特</button>
-        </div>
-    </div>
-
-    <div class="section-title">📊 王表現況</div>
+    <div class="section-title">📊 王表現況（點擊 BOSS 名稱直接快速登記）</div>
     <table class="desktop-table">
         <thead>
             <tr>
@@ -435,7 +421,7 @@
 
         if (hours > 23 || minutes > 59 || seconds > 59) {
             alert("輸入的時間不合法！");
-    return;
+            return;
         }
 
         let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
@@ -520,7 +506,7 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${name}</strong></td>
+                <td><button class="boss-click-btn" onclick="registerBoss('${name}')" title="點擊快速登記">${name}</button></td>
                 <td>${intervalMins}分</td>
                 <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
