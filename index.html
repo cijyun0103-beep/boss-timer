@@ -1,159 +1,507 @@
-const express = require('express');
-const cors = require('cors');
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天堂M 王表系統 v4.8</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --border-color: #333;
+        }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
 
-app.use(cors());
-app.use(express.json());
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
 
-let bossStates = {};
-let notifiedOneMin = {};
+        h2 {
+            font-size: 1.4rem;
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
 
-const bossIntervals = {
-    "死亡騎士": 240,
-    "將軍": 360,
-    "古代巨人": 510,
-    "不死鳥": 480,
-    "克特": 600
-};
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
+        .settings-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.85rem;
+            background: #1a1a1a;
+            padding: 6px 12px;
+            border-radius: 6px;
+            width: fit-content;
+        }
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions
-    ]
-});
+        .volume-icon {
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1rem;
+        }
 
-client.once('clientReady', () => {
-    console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
-});
+        .settings-bar input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 140px;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            outline: none !important;
+            cursor: pointer;
+            margin: 0 4px;
+        }
 
-// 共用的發送 Discord 擊殺通知函數
-async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
-    if (!channel) return;
-    const killDate = new Date(killTimeMs);
-    const killTimeStr = `${String(killDate.getHours()).padStart(2, '0')}:${String(killDate.getMinutes()).padStart(2, '0')}:${String(killDate.getSeconds()).padStart(2, '0')}`;
-    
-    const respawnDate = new Date(respawnTimeMs);
-    const respawnTimeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+        .settings-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
 
-    await channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
-}
+        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
 
-// 監聽 Discord 上的表情符號反應（點擊 💩 登記擊殺）
-client.on('messageReactionAdd', async (reaction, user) => {
-    if (user.bot) return;
-    if (reaction.partial) await reaction.fetch();
+        .btn-refresh {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-refresh:hover {
+            background-color: var(--success-hover);
+        }
 
-    const message = reaction.message;
-    if (message.author.id === client.user.id && message.embeds.length > 0) {
-        const embed = message.embeds[0];
-        for (const bossName of Object.keys(bossIntervals)) {
-            if (embed.description && embed.description.includes(bossName)) {
-                if (reaction.emoji.name === '💩') {
-                    const now = new Date();
-                    const killTimeMs = now.getTime();
-                    const intervalMs = bossIntervals[bossName] * 60000;
-                    const respawnTimeMs = killTimeMs + intervalMs;
+        .section-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            color: #93c5fd;
+        }
 
-                    bossStates[bossName] = respawnTimeMs;
-                    notifiedOneMin[bossName] = false;
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: var(--accent-hover);
+        }
 
-                    await sendKillNotification(message.channel, bossName, killTimeMs, respawnTimeMs);
-                }
-            }
+        .btn-danger {
+            background-color: var(--danger-color);
+            width: 100%;
+            margin-top: 15px;
+        }
+        .btn-danger:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .manual-section {
+            display: flex;
+            gap: 10px;
+            background: #252525;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        select, input {
+            background: #333;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .pc-widget-panel {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pc-widget-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pc-widget-buttons button {
+            flex: 1;
+            min-width: 110px;
+            padding: 8px 10px;
+            font-size: 0.95rem;
+        }
+
+        .desktop-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .desktop-table th, .desktop-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+        .desktop-table th {
+            background-color: #2a2a2a;
+        }
+
+        .mobile-cards {
+            display: none;
+        }
+
+        @media screen and (max-width: 768px) {
+            .desktop-table { display: none !important; }
+            .pc-widget-panel { display: none !important; }
+            .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
+            .manual-section { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.8</span></h2>
+
+    <div class="top-bar">
+        <div class="settings-bar">
+            <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
+            <label>音量:</label>
+            <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume()">
+            <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
+            <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
+        </div>
+        <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
+    </div>
+
+    <!-- PC 快速登記小工具 -->
+    <div class="pc-widget-panel">
+        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
+        <div class="pc-widget-buttons">
+            <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
+            <button onclick="registerBoss('將軍', new Date())">將軍</button>
+            <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
+            <button onclick="registerBoss('不死鳥', new Date())">不死鳥</button>
+            <button onclick="registerBoss('克特', new Date())">克特</button>
+        </div>
+    </div>
+
+    <div class="section-title">📊 王表現況</div>
+    <table class="desktop-table">
+        <thead>
+            <tr>
+                <th>BOSS 名稱</th>
+                <th>間隔</th>
+                <th>預計重生時間</th>
+                <th>剩餘倒數</th>
+            </tr>
+        </thead>
+        <tbody id="boss-table-body">
+            <!-- 動態生成 -->
+        </tbody>
+    </table>
+
+    <div class="section-title">手動補登</div>
+    <div class="manual-section">
+        <select id="manual-boss-select"></select>
+        <input type="text" id="manual-time-input" placeholder="輸入 4 碼或 6 碼 (例如 1605)" maxlength="6">
+        <button onclick="registerManualBoss()">登記擊殺 (K)</button>
+    </div>
+
+    <button class="btn-danger" onclick="resetAll()">全部重置</button>
+</div>
+
+<script>
+    const bossIntervals = {
+        "死亡騎士": 240,
+        "將軍": 360,
+        "古代巨人": 510,
+        "不死鳥": 480,
+        "克特": 600
+    };
+
+    let bossStates = {};
+    let volume = 0.5;
+    let isMuted = false;
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
         }
     }
-});
 
-if (DISCORD_BOT_TOKEN) {
-    client.login(DISCORD_BOT_TOKEN).catch(err => console.log("Discord 登入失敗:", err));
-}
-
-// API 路由
-app.get('/api/bosses', (req, res) => {
-    res.json({ bossStates });
-});
-
-app.post('/api/bosses', async (req, res) => {
-    if (req.body && req.body.states) {
-        const oldStates = { ...bossStates };
-        bossStates = req.body.states;
-
-        const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-        if (channel) {
-            const now = new Date().getTime();
-            for (const [bossName, newRespawnTime] of Object.entries(bossStates)) {
-                if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
-                    const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                    const killTimeMs = newRespawnTime - intervalMs;
-                    if (Math.abs(now - killTimeMs) < 600000) { 
-                        await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
-                    }
-                }
-            }
-        }
-
-        res.json({ success: true, bossStates });
-    } else {
-        res.status(400).json({ success: false, error: 'Invalid data' });
-    }
-});
-
-app.post('/api/reset', (req, res) => {
-    bossStates = {};
-    notifiedOneMin = {};
-    res.json({ success: true, bossStates });
-});
-
-// 背景定時檢查：當王倒數剩 1 分鐘時發送通報並自動掛上 💩
-setInterval(async () => {
-    if (!client.isReady()) return;
-    const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-    if (!channel) return;
-
-    const now = new Date().getTime();
-    for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
-        if (!respawnTimeMs) continue;
-        const intervalMs = bossIntervals[name] * 60000;
-        let displayRespawnTime = respawnTimeMs;
-
-        if (now > displayRespawnTime) {
-            const diffTime = now - displayRespawnTime;
-            const overdueCount = Math.floor(diffTime / intervalMs) + 1;
-            displayRespawnTime += overdueCount * intervalMs;
-        }
-
-        const diff = displayRespawnTime - now;
-        if (diff <= 60000 && diff > 50000) {
-            if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
-                notifiedOneMin[name] = displayRespawnTime;
-
-                const respawnDate = new Date(displayRespawnTime);
-                const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
-
-                const embed = new EmbedBuilder()
-                    .setColor('#ef4444')
-                    .setTitle('🚨 【重要快訊】')
-                    .setDescription(`【**${name}**】將於 **1 分鐘內**（${timeStr}）重生，請點擊下方 💩 反應來記錄擊殺！`)
-                    .setTimestamp();
-
-                const sentMsg = await channel.send({ embeds: [embed] }).catch(err => console.log("發送失敗:", err));
-                if (sentMsg) {
-                    await sentMsg.react('💩');
-                }
-            }
+    function playBeep(frequency = 800, duration = 0.2, type = 'sine') {
+        if (isMuted || volume <= 0) return;
+        try {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = frequency;
+            gain.gain.setValueAtTime(volume * 0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.log("音效播放失敗", e);
         }
     }
-}, 5000);
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+    function testAudio() {
+        playBeep(1000, 0.3);
+    }
+
+    function updateVolume() {
+        const slider = document.getElementById('volume-slider');
+        volume = slider.value / 100;
+        document.getElementById('volume-text').innerText = slider.value + '%';
+        if (volume === 0) {
+            isMuted = true;
+            document.getElementById('volume-icon').innerText = '🔇';
+        } else {
+            isMuted = false;
+            document.getElementById('volume-icon').innerText = '🔊';
+        }
+    }
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        const icon = document.getElementById('volume-icon');
+        const slider = document.getElementById('volume-slider');
+        if (isMuted) {
+            icon.innerText = '🔇';
+            slider.value = 0;
+            document.getElementById('volume-text').innerText = '0%';
+        } else {
+            icon.innerText = '🔊';
+            slider.value = volume * 100;
+            document.getElementById('volume-text').innerText = Math.round(volume * 100) + '%';
+        }
+    }
+
+    function initSelect() {
+        const select = document.getElementById('manual-boss-select');
+        select.innerHTML = '';
+        for (const [name, mins] of Object.entries(bossIntervals)) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = `${name} (${mins}分)`;
+            select.appendChild(opt);
+        }
+    }
+
+    function syncToServer() {
+        fetch('/api/bosses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ states: bossStates })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.bossStates) {
+                bossStates = data.bossStates;
+                renderTable();
+            }
+        })
+        .catch(err => console.log("同步伺服器失敗:", err));
+    }
+
+    function fetchServerData(showAlert = false) {
+        fetch('/api/bosses')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.bossStates) {
+                    bossStates = data.bossStates;
+                    renderTable();
+                    if (showAlert) alert("已成功同步伺服器資料！");
+                }
+            })
+            .catch(err => {
+                if (showAlert) alert("無法連接伺服器！");
+            });
+    }
+
+    function registerBoss(bossName, timeObj) {
+        const intervalMins = bossIntervals[bossName];
+        const killTimeMs = timeObj.getTime();
+        const respawnTimeMs = killTimeMs + (intervalMins * 60000);
+        
+        bossStates[bossName] = respawnTimeMs;
+        syncToServer();
+    }
+
+    function registerManualBoss() {
+        const bossName = document.getElementById('manual-boss-select').value;
+        const timeInput = document.getElementById('manual-time-input').value.trim();
+        
+        if (!timeInput || (timeInput.length !== 4 && timeInput.length !== 6)) {
+            alert("請輸入正確的時間格式：4碼 (例如 1605) 或 6碼 (例如 160530)");
+            return;
+        }
+
+        const now = new Date();
+        let hours, minutes, seconds = 0;
+
+        if (timeInput.length === 4) {
+            hours = parseInt(timeInput.substring(0, 2), 10);
+            minutes = parseInt(timeInput.substring(2, 4), 10);
+        } else {
+            hours = parseInt(timeInput.substring(0, 2), 10);
+            minutes = parseInt(timeInput.substring(2, 4), 10);
+            seconds = parseInt(timeInput.substring(4, 6), 10);
+        }
+
+        if (hours > 23 || minutes > 59 || seconds > 59) {
+            alert("輸入的時間不合法！");
+            return;
+        }
+
+        let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
+        
+        // 如果輸入的時間大於當前時間，視為昨天的擊殺紀錄
+        if (killDate.getTime() > now.getTime()) {
+            killDate.setDate(killDate.getDate() - 1);
+        }
+
+        registerBoss(bossName, killDate);
+        document.getElementById('manual-time-input').value = '';
+    }
+
+    function resetAll() {
+        if (confirm("確定要重置所有王表紀錄嗎？")) {
+            fetch('/api/reset', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    bossStates = data.bossStates || {};
+                    renderTable();
+                });
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('boss-table-body');
+        tbody.innerHTML = '';
+        const now = new Date().getTime();
+
+        for (const [name, intervalMins] of Object.entries(bossIntervals)) {
+            let respawnTimeMs = bossStates[name];
+            let respawnStr = "尚未登記";
+            let countdownStr = "-";
+            const intervalMs = intervalMins * 60000;
+
+            if (respawnTimeMs) {
+                let overdueCount = 0;
+                if (now > respawnTimeMs) {
+                    const diffTime = now - respawnTimeMs;
+                    overdueCount = Math.floor(diffTime / intervalMs) + 1;
+                    respawnTimeMs += overdueCount * intervalMs;
+                }
+
+                const respawnDate = new Date(respawnTimeMs);
+                const hh = String(respawnDate.getHours()).padStart(2, '0');
+                const mm = String(respawnDate.getMinutes()).padStart(2, '0');
+                const ss = String(respawnDate.getSeconds()).padStart(2, '0');
+                
+                respawnStr = `${hh}:${mm}:${ss}`;
+                if (overdueCount > 0) {
+                    respawnStr += ` (過${overdueCount})`;
+                }
+
+                const diff = respawnTimeMs - now;
+                if (diff > 0) {
+                    const totalSec = Math.floor(diff / 1000);
+                    const h = Math.floor(totalSec / 3600);
+                    const m = Math.floor((totalSec % 3600) / 60);
+                    const s = totalSec % 60;
+                    countdownStr = `${h}時 ${m}分 ${s}秒`;
+                } else {
+                    countdownStr = "即將重生或已過期";
+                }
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${name}</strong></td>
+                <td>${intervalMins}分</td>
+                <td>${respawnStr}</td>
+                <td>${countdownStr}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    // 快捷鍵監聽：按 K 鍵直接觸發手動補登
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'k' || e.key === 'K') {
+            if (document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                registerManualBoss();
+            }
+        }
+    });
+
+    // 初始化與定時更新畫面
+    initSelect();
+    fetchServerData();
+    setInterval(renderTable, 1000);
+    setInterval(() => { fetchServerData(); }, 15000);
+</script>
+
+</body>
+</html>
