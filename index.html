@@ -281,7 +281,6 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    // 正確綁定你真實的 npoint API 網址
     const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
 
     const bossList = [
@@ -293,6 +292,8 @@
     ];
 
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+    // 記錄每一筆資料最後更新的時間戳記版本
+    let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
 
     function fetchCloudData() {
@@ -300,8 +301,21 @@
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
-                    if (Object.keys(data).length > 0) {
-                        bossStates = data;
+                    // 如果雲端有帶時間戳記版本號，且比本地新，才進行更新
+                    const cloudTimestamp = data._updatedAt || 0;
+                    
+                    if (cloudTimestamp > lastSyncTime) {
+                        lastSyncTime = cloudTimestamp;
+                        localStorage.setItem('lastSyncTime', lastSyncTime);
+                        
+                        // 排除版本欄位，只留下王的時間
+                        let newStates = {};
+                        for (let key in data) {
+                            if (key !== '_updatedAt') {
+                                newStates[key] = data[key];
+                            }
+                        }
+                        bossStates = newStates;
                         localStorage.setItem('bossStates', JSON.stringify(bossStates));
                         updateDisplay();
                     }
@@ -311,13 +325,19 @@
     }
 
     function saveCloudData() {
+        // 每次儲存時更新最新的時間戳記，確保比對版本有效
+        lastSyncTime = new Date().getTime();
+        localStorage.setItem('lastSyncTime', lastSyncTime);
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
+
+        let payload = { ...bossStates, _updatedAt: lastSyncTime };
+
         fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(bossStates)
+            body: JSON.stringify(payload)
         })
         .catch(err => console.log("上傳雲端失敗"));
     }
@@ -394,13 +414,7 @@
         if (confirm("確定要重置所有王的計時嗎？")) {
             bossStates = {};
             alertedBosses = {};
-            localStorage.setItem('bossStates', JSON.stringify({}));
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
-            }).catch(err => console.log("重置雲端失敗"));
-            updateDisplay();
+            saveAndRefresh();
         }
     }
 
