@@ -68,7 +68,7 @@
             accent-color: var(--accent-color);
         }
 
-        .btn-refresh {
+        .btn-sync {
             background-color: var(--success-color);
             color: white;
             border: none;
@@ -78,7 +78,7 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .btn-refresh:hover {
+        .btn-sync:hover {
             background-color: var(--success-hover);
         }
 
@@ -184,7 +184,6 @@
             margin-top: 4px;
         }
 
-        /* ---------------- 手機版專屬優化（螢幕小於 768px） ---------------- */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
@@ -260,7 +259,10 @@
             <span id="volume-text">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem;">測試</button>
         </div>
-        <button class="btn-refresh" onclick="manualRefresh()">🔄 刷新最新資訊</button>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn-sync" onclick="exportData()" style="background-color: #3b82f6;">📤 複製同步碼</button>
+            <button class="btn-sync" onclick="importData()">📥 貼上同步</button>
+        </div>
     </div>
 
     <div class="section-title">⚡ 快速登記</div>
@@ -289,7 +291,6 @@
 
     <div class="section-title" style="margin-top: 20px;">📊 王表現況</div>
     
-    <!-- 電腦版表格 -->
     <table class="desktop-table">
         <thead>
             <tr>
@@ -302,15 +303,12 @@
         <tbody id="boss-table-body"></tbody>
     </table>
 
-    <!-- 手機版卡片 -->
     <div class="mobile-cards" id="boss-cards-container"></div>
 </div>
 
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    const API_URL = 'url?id=54';
-
     const bossList = [
         { name: "死亡騎士", interval: 240 },
         { name: "將軍", interval: 360 },
@@ -320,55 +318,7 @@
     ];
 
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
-    let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
-
-    // 手動刷新按鈕：只在有確實抓到有效王資料時才更新，否則絕不覆蓋本機
-    function manualRefresh() {
-        fetch(API_URL + '?t=' + new Date().getTime())
-            .then(response => response.json())
-            .then(data => {
-                if (data && typeof data === 'object') {
-                    let hasValidData = false;
-                    let newStates = {};
-                    
-                    for (let key in data) {
-                        if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
-                            newStates[key] = data[key];
-                            hasValidData = true;
-                        }
-                    }
-
-                    if (hasValidData) {
-                        bossStates = newStates;
-                        localStorage.setItem('bossStates', JSON.stringify(bossStates));
-                        updateDisplay();
-                        alert("✅ 已成功重新整理最新資訊！");
-                    } else {
-                        alert("⚠️ 雲端目前沒有有效的登記資料，維持本機顯示。");
-                    }
-                }
-            })
-            .catch(err => alert("⚠️ 同步失敗，請檢查網路連線"));
-    }
-
-    function saveCloudData() {
-        lastSyncTime = new Date().getTime();
-        localStorage.setItem('lastSyncTime', lastSyncTime);
-        localStorage.setItem('localStorage-bossStates', JSON.stringify(bossStates));
-        localStorage.setItem('bossStates', JSON.stringify(bossStates));
-
-        let payload = { ...bossStates, _updatedAt: lastSyncTime };
-
-        fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-        .catch(err => console.log("上傳雲端失敗"));
-    }
 
     function initUI() {
         const slider = document.getElementById('volume-slider');
@@ -446,8 +396,32 @@
     }
 
     function saveAndRefresh() {
-        saveCloudData();
+        localStorage.setItem('bossStates', JSON.stringify(bossStates));
         updateDisplay();
+    }
+
+    // 💡 完美解決同步問題：一鍵複製同步碼與貼上同步
+    function exportData() {
+        const dataStr = btoa(encodeURIComponent(JSON.stringify(bossStates)));
+        navigator.clipboard.writeText(dataStr).then(() => {
+            alert("✅ 已成功複製同步碼！請到手機或另一台裝置貼上。");
+        }).catch(err => {
+            prompt("請複製以下同步碼：", dataStr);
+        });
+    }
+
+    function importData() {
+        const inputStr = prompt("請貼上從另一端複製的同步碼：");
+        if (!inputStr) return;
+        try {
+            const decodedStr = decodeURIComponent(atob(inputStr.trim()));
+            bossStates = JSON.parse(decodedStr);
+            localStorage.setItem('bossStates', JSON.stringify(bossStates));
+            updateDisplay();
+            alert("✅ 成功同步最新王表！");
+        } catch (e) {
+            alert("❌ 同步碼格式錯誤，請重新確認！");
+        }
     }
 
     function updateDisplay() {
@@ -466,7 +440,6 @@
             return timeA - timeB;
         });
 
-        // 1. 電腦版表格渲染
         sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
@@ -504,7 +477,6 @@
             tbody.appendChild(tr);
         });
 
-        // 2. 手機版卡片渲染
         sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
@@ -545,7 +517,7 @@
             const audio = document.getElementById('alarm-sound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.log("等待互動解鎖音效填補"));
+                audio.play().catch(e => console.log("等待互動解鎖音效"));
             }
         }
     }
