@@ -82,21 +82,23 @@ app.get('/api/bosses', (req, res) => {
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         const oldStates = { ...bossStates };
-        const incomingStates = req.body.states; // 格式: { [bossName]: respawnTimeMs }
+        const incomingStates = req.body.states;
+        const now = new Date().getTime(); // 收到請求當下的真實毫秒時間
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
                 const intervalMs = (bossIntervals[bossName] || 240) * 60000;
                 
-                // 準確以傳過來的重生時間反推出正確的擊殺時間
-                const killTimeMs = newRespawnTime - intervalMs;
+                // 核心修正：將擊殺時間直接定為「現在按下按鈕的當下時間」，重生時間則以該擊殺時間往後推算！
+                const killTimeMs = now;
+                const exactRespawnTimeMs = killTimeMs + intervalMs;
 
-                bossStates[bossName] = newRespawnTime;
+                bossStates[bossName] = exactRespawnTimeMs;
                 notifiedOneMin[bossName] = false;
 
                 if (channel) {
-                    await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
+                    await sendKillNotification(channel, bossName, killTimeMs, exactRespawnTimeMs);
                 }
             }
         }
