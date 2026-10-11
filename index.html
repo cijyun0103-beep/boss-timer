@@ -68,7 +68,7 @@
             accent-color: var(--accent-color);
         }
 
-        .btn-sync {
+        .btn-refresh {
             background-color: var(--success-color);
             color: white;
             border: none;
@@ -78,7 +78,7 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .btn-sync:hover {
+        .btn-refresh:hover {
             background-color: var(--success-hover);
         }
 
@@ -259,10 +259,7 @@
             <span id="volume-text">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem;">測試</button>
         </div>
-        <div style="display: flex; gap: 6px;">
-            <button class="btn-sync" onclick="exportData()" style="background-color: #3b82f6;">📤 複製同步碼</button>
-            <button class="btn-sync" onclick="importData()">📥 貼上同步</button>
-        </div>
+        <button class="btn-refresh" onclick="fetchCloudData(true)">🔄 同步雲端資料</button>
     </div>
 
     <div class="section-title">⚡ 快速登記</div>
@@ -309,6 +306,8 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
+    const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
+
     const bossList = [
         { name: "死亡騎士", interval: 240 },
         { name: "將軍", interval: 360 },
@@ -317,8 +316,54 @@
         { name: "克特", interval: 600 }
     ];
 
-    let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+    let bossStates = {};
     let alertedBosses = {};
+
+    // 核心：從雲端抓取最新數據
+    function fetchCloudData(showAlert = false) {
+        fetch(API_URL + '?t=' + new Date().getTime())
+            .then(response => response.json())
+            .then(data => {
+                if (data && typeof data === 'object') {
+                    let newStates = {};
+                    let hasData = false;
+                    for (let key in data) {
+                        if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
+                            newStates[key] = data[key];
+                            hasData = true;
+                        }
+                    }
+                    // 只要雲端有有效資料就採用
+                    if (hasData) {
+                        bossStates = newStates;
+                    } else {
+                        bossStates = {}; // 雲端若為空則清空
+                    }
+                    updateDisplay();
+                    if (showAlert) alert("✅ 已成功從雲端同步最新王表！");
+                }
+            })
+            .catch(err => {
+                if (showAlert) alert("⚠️ 雲端連線失敗，請檢查網路。");
+            });
+    }
+
+    // 核心：將變更直接寫入雲端
+    function saveToCloud() {
+        let payload = { ...bossStates, _updatedAt: new Date().getTime() };
+
+        fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            fetchCloudData(); // 寫入後立即重新抓取確認
+        })
+        .catch(err => console.log("寫入雲端失敗"));
+    }
 
     function initUI() {
         const slider = document.getElementById('volume-slider');
@@ -329,7 +374,7 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-        updateDisplay();
+        fetchCloudData(); // 一開網頁就從雲端抓取
     }
 
     function updateVolume() {
@@ -356,7 +401,7 @@
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
         alertedBosses[name] = false;
-        saveAndRefresh();
+        saveToCloud(); // 立即存入雲端
     }
 
     function manualRegister() {
@@ -391,36 +436,7 @@
         if (confirm("確定要重置所有王的計時嗎？")) {
             bossStates = {};
             alertedBosses = {};
-            saveAndRefresh();
-        }
-    }
-
-    function saveAndRefresh() {
-        localStorage.setItem('bossStates', JSON.stringify(bossStates));
-        updateDisplay();
-    }
-
-    // 💡 完美解決同步問題：一鍵複製同步碼與貼上同步
-    function exportData() {
-        const dataStr = btoa(encodeURIComponent(JSON.stringify(bossStates)));
-        navigator.clipboard.writeText(dataStr).then(() => {
-            alert("✅ 已成功複製同步碼！請到手機或另一台裝置貼上。");
-        }).catch(err => {
-            prompt("請複製以下同步碼：", dataStr);
-        });
-    }
-
-    function importData() {
-        const inputStr = prompt("請貼上從另一端複製的同步碼：");
-        if (!inputStr) return;
-        try {
-            const decodedStr = decodeURIComponent(atob(inputStr.trim()));
-            bossStates = JSON.parse(decodedStr);
-            localStorage.setItem('bossStates', JSON.stringify(bossStates));
-            updateDisplay();
-            alert("✅ 成功同步最新王表！");
-        } catch (e) {
-            alert("❌ 同步碼格式錯誤，請重新確認！");
+            saveToCloud(); // 雲端清空
         }
     }
 
@@ -529,6 +545,7 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
+        setInterval(() => fetchCloudData(false), 5000); // 每 5 秒自動向雲端同步
     };
 </script>
 
