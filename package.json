@@ -1,7 +1,6 @@
 {
   "name": "boss-timer",
   "version": "1.0.0",
-  "description": "Boss Timer with Discord Bot",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
