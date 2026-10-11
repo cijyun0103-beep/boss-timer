@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.3</title>
+    <title>天堂M 王表系統 v6.4</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -227,7 +227,7 @@
         }
 
         @media screen and (max-width: 768px) {
-            .desktop-table { display: none !important; }
+            /* 修正：移除隱藏 desktop-table 的設定，讓手機也能正常顯示王表 */
             .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
         }
@@ -236,7 +236,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.3</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.4</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -503,7 +503,6 @@
                 const mm = String(respawnDate.getMinutes()).padStart(2, '0');
                 const ss = String(respawnDate.getSeconds()).padStart(2, '0');
                 
-                // 重生時間固定顯示白色，只有後面附加的 (過X) 加上紅色標籤類別
                 respawnStr = `${hh}:${mm}:${ss}`;
                 if (overdueCount > 0) {
                     respawnStr += ` <span class="overdue-tag">(過${overdueCount})</span>`;
