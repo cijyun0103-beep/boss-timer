@@ -35,13 +35,22 @@ client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
+// 取得精確的台灣時間（UTC+8）
+function getTaiwanDate(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    // 加上 8 小時的毫秒數補償 Render 雲端時區差
+    return new Date(date.getTime() + (8 * 60 * 60 * 1000));
+}
+
 async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
     if (!channel) return;
-    const killDate = new Date(killTimeMs);
-    const killTimeStr = `${String(killDate.getHours()).padStart(2, '0')}:${String(killDate.getMinutes()).padStart(2, '0')}:${String(killDate.getSeconds()).padStart(2, '0')}`;
     
-    const respawnDate = new Date(respawnTimeMs);
-    const respawnTimeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+    // 轉換為台灣時區的時間格式
+    const killDate = getTaiwanDate(killTimeMs);
+    const killTimeStr = `${String(killDate.getUTCHours()).padStart(2, '0')}:${String(killDate.getUTCMinutes()).padStart(2, '0')}:${String(killDate.getUTCSeconds()).padStart(2, '0')}`;
+    
+    const respawnDate = getTaiwanDate(respawnTimeMs);
+    const respawnTimeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}:${String(respawnDate.getUTCSeconds()).padStart(2, '0')}`;
 
     await channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
 }
@@ -56,8 +65,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
                 if (reaction.emoji.name === '💩') {
-                    const now = new Date();
-                    const killTimeMs = now.getTime();
+                    const killTimeMs = Date.now();
                     const intervalMs = bossIntervals[bossName] * 60000;
                     const respawnTimeMs = killTimeMs + intervalMs;
 
@@ -83,15 +91,12 @@ app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         const oldStates = { ...bossStates };
         const incomingStates = req.body.states;
-        const now = new Date().getTime(); // 收到請求當下的真實毫秒時間
+        const killTimeMs = Date.now(); // 記錄當下伺服器收到請求的時間
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
                 const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                
-                // 核心修正：將擊殺時間直接定為「現在按下按鈕的當下時間」，重生時間則以該擊殺時間往後推算！
-                const killTimeMs = now;
                 const exactRespawnTimeMs = killTimeMs + intervalMs;
 
                 bossStates[bossName] = exactRespawnTimeMs;
@@ -120,7 +125,7 @@ setInterval(async () => {
     const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
     if (!channel) return;
 
-    const now = new Date().getTime();
+    const now = Date.now();
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
         if (!respawnTimeMs) continue;
         const intervalMs = bossIntervals[name] * 60000;
@@ -137,8 +142,8 @@ setInterval(async () => {
             if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
                 notifiedOneMin[name] = displayRespawnTime;
 
-                const respawnDate = new Date(displayRespawnTime);
-                const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+                const respawnDate = getTaiwanDate(displayRespawnTime);
+                const timeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}:${String(respawnDate.getUTCSeconds()).padStart(2, '0')}`;
 
                 const embed = new EmbedBuilder()
                     .setColor('#ef4444')
