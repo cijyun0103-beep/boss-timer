@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v1.1</title>
+    <title>天堂M 王表系統 v1.2</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -184,6 +184,7 @@
             margin-top: 4px;
         }
 
+        /* 專門針對手機版的排版調整（PC版完全不受影響） */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
@@ -194,9 +195,9 @@
                 flex-direction: column;
             }
 
-            h2 { order: 1; }
-            .top-bar { order: 2; justify-content: space-between; }
-            .section-title:nth-of-type(1) { order: 3; }
+            h2 { order: 1 !important; }
+            .top-bar { order: 2 !important; justify-content: space-between; }
+            .section-title:nth-of-type(1) { order: 3 !important; }
             
             .btn-group {
                 display: flex !important;
@@ -221,7 +222,7 @@
                 min-width: calc(50% - 4px) !important;
             }
 
-            .section-title:nth-of-type(2) { order: 5; }
+            .section-title:nth-of-type(2) { order: 5 !important; }
             
             .manual-section {
                 display: flex !important;
@@ -237,7 +238,7 @@
                 box-sizing: border-box !important;
             }
 
-            .section-title:nth-of-type(3) { order: 7; }
+            .section-title:nth-of-type(3) { order: 7 !important; }
             .mobile-cards { order: 8 !important; }
 
             .btn-danger {
@@ -250,7 +251,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.1</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.2</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -306,7 +307,6 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    // 💡 連線至 Render 雲端伺服器
     const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
     const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
 
@@ -539,7 +539,7 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
-        setInterval(() => fetchServerData(false), 3000); // 每 3 秒自動向雲端同步
+        setInterval(() => fetchServerData(false), 3000);
     };
 </script>
 
