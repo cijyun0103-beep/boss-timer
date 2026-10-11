@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 let bossStates = {};
-let notifiedOneMin = {}; // 紀錄已經發送過 1 分鐘通知的狀態，避免重複洗版
+let notifiedOneMin = {};
 
 // 你的 Discord Webhook 網址
 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK';
@@ -22,10 +22,11 @@ async function sendDiscordNotification(message) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: message })
         });
-        const resultText = await response.text();
-        console.log("Discord 通知結果:", response.status, resultText);
+        
+        const responseText = await response.text();
+        console.log(`[Discord 狀態] 碼: ${response.status}, 回應: ${responseText}`);
     } catch (err) {
-        console.log("Discord 通知發送失敗:", err);
+        console.log("[Discord 錯誤] 發送失敗:", err);
     }
 }
 
@@ -51,7 +52,7 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 💡 伺服器端背景定時檢查（每 10 秒執行一次）
+// 背景定時檢查
 const bossIntervals = {
     "死亡騎士": 240,
     "將軍": 360,
@@ -68,7 +69,6 @@ setInterval(() => {
         const intervalMs = (bossIntervals[name] || 240) * 60000;
         let displayRespawnTime = respawnTimeMs;
 
-        // 計算超時後的最近重生點
         if (now > displayRespawnTime) {
             const diffTime = now - displayRespawnTime;
             const overdueCount = Math.floor(diffTime / intervalMs) + 1;
@@ -77,8 +77,8 @@ setInterval(() => {
 
         const diff = displayRespawnTime - now;
 
-        // 當剩餘時間小於等於 60 秒且大於 0 秒
-        if (diff <= 60000 && diff > 0) {
+        // 當剩餘時間在 50 秒到 60 秒之間時觸發，確保不會漏掉
+        if (diff <= 60000 && diff > 50000) {
             if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
                 notifiedOneMin[name] = displayRespawnTime;
                 const respawnDate = new Date(displayRespawnTime);
@@ -88,7 +88,7 @@ setInterval(() => {
             }
         }
     }
-}, 10000);
+}, 5000); // 每 5 秒檢查一次
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
