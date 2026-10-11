@@ -309,8 +309,7 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    // 直接綁死真實的 npoint API 網址，絕不改變
-    const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
+    const API_URL = 'url?id=54';
 
     const bossList = [
         { name: "死亡騎士", interval: 240 },
@@ -324,66 +323,39 @@
     let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
 
-    function fetchCloudData() {
-        fetch(API_URL + '?t=' + new Date().getTime())
-            .then(response => response.json())
-            .then(data => {
-                if (data && typeof data === 'object') {
-                    const cloudTimestamp = data._updatedAt || 0;
-                    
-                    if (cloudTimestamp > lastSyncTime) {
-                        lastSyncTime = cloudTimestamp;
-                        localStorage.setItem('lastSyncTime', lastSyncTime);
-                        
-                        let newStates = {};
-                        for (let key in data) {
-                            if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
-                                newStates[key] = data[key];
-                            }
-                        }
-                        if (Object.keys(newStates).length > 0) {
-                            bossStates = newStates;
-                            localStorage.setItem('bossStates', JSON.stringify(bossStates));
-                            updateDisplay();
-                        }
-                    }
-                }
-            })
-            .catch(err => console.log("背景同步略過"));
-    }
-
+    // 手動刷新按鈕：只在有確實抓到有效王資料時才更新，否則絕不覆蓋本機
     function manualRefresh() {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
-                    const cloudTimestamp = data._updatedAt || 0;
-                    lastSyncTime = cloudTimestamp;
-                    localStorage.setItem('lastSyncTime', lastSyncTime);
-                    
+                    let hasValidData = false;
                     let newStates = {};
+                    
                     for (let key in data) {
                         if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
                             newStates[key] = data[key];
+                            hasValidData = true;
                         }
                     }
-                    if (Object.keys(newStates).length > 0) {
+
+                    if (hasValidData) {
                         bossStates = newStates;
                         localStorage.setItem('bossStates', JSON.stringify(bossStates));
+                        updateDisplay();
+                        alert("✅ 已成功重新整理最新資訊！");
+                    } else {
+                        alert("⚠️ 雲端目前沒有有效的登記資料，維持本機顯示。");
                     }
                 }
-                updateDisplay();
-                alert("✅ 已成功重新整理最新資訊！");
             })
-            .catch(err => {
-                updateDisplay();
-                alert("ℹ️ 雲端連線失敗，已讀取本機最新倒數資料！");
-            });
+            .catch(err => alert("⚠️ 同步失敗，請檢查網路連線"));
     }
 
     function saveCloudData() {
         lastSyncTime = new Date().getTime();
         localStorage.setItem('lastSyncTime', lastSyncTime);
+        localStorage.setItem('localStorage-bossStates', JSON.stringify(bossStates));
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
 
         let payload = { ...bossStates, _updatedAt: lastSyncTime };
@@ -407,7 +379,6 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-        fetchCloudData();
         updateDisplay();
     }
 
@@ -574,7 +545,7 @@
             const audio = document.getElementById('alarm-sound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.log("等待互動解鎖音效"));
+                audio.play().catch(e => console.log("等待互動解鎖音效填補"));
             }
         }
     }
@@ -586,7 +557,6 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
-        setInterval(fetchCloudData, 5000);
     };
 </script>
 
