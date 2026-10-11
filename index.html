@@ -196,14 +196,9 @@
             background-color: #2a2a2a;
         }
 
-        .mobile-cards {
-            display: none;
-        }
-
         @media screen and (max-width: 768px) {
             .desktop-table { display: none !important; }
             .pc-widget-panel { display: none !important; }
-            .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
             .manual-section { flex-direction: column; align-items: stretch; }
         }
     </style>
@@ -262,6 +257,8 @@
 </div>
 
 <script>
+    const API_BASE = 'https://boss-timer-9c6e.onrender.com';
+
     const bossIntervals = {
         "死亡騎士": 240,
         "將軍": 360,
@@ -347,7 +344,7 @@
     }
 
     function syncToServer() {
-        fetch('/api/bosses', {
+        fetch(`${API_BASE}/api/bosses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ states: bossStates })
@@ -363,7 +360,7 @@
     }
 
     function fetchServerData(showAlert = false) {
-        fetch('/api/bosses')
+        fetch(`${API_BASE}/api/bosses`)
             .then(res => res.json())
             .then(data => {
                 if (data && data.bossStates) {
@@ -414,7 +411,6 @@
 
         let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
         
-        // 如果輸入的時間大於當前時間，視為昨天的擊殺紀錄
         if (killDate.getTime() > now.getTime()) {
             killDate.setDate(killDate.getDate() - 1);
         }
@@ -425,7 +421,7 @@
 
     function resetAll() {
         if (confirm("確定要重置所有王表紀錄嗎？")) {
-            fetch('/api/reset', { method: 'POST' })
+            fetch(`${API_BASE}/api/reset`, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     bossStates = data.bossStates || {};
@@ -486,7 +482,6 @@
         }
     }
 
-    // 快捷鍵監聽：按 K 鍵直接觸發手動補登
     document.addEventListener('keydown', (e) => {
         if (e.key === 'k' || e.key === 'K') {
             if (document.activeElement.tagName !== 'INPUT') {
@@ -496,7 +491,6 @@
         }
     });
 
-    // 初始化與定時更新畫面
     initSelect();
     fetchServerData();
     setInterval(renderTable, 1000);
