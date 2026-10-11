@@ -35,17 +35,14 @@ client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
-// 取得精確的台灣時間（UTC+8）
 function getTaiwanDate(timestamp = Date.now()) {
     const date = new Date(timestamp);
-    // 加上 8 小時的毫秒數補償 Render 雲端時區差
     return new Date(date.getTime() + (8 * 60 * 60 * 1000));
 }
 
 async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
     if (!channel) return;
     
-    // 轉換為台灣時區的時間格式
     const killDate = getTaiwanDate(killTimeMs);
     const killTimeStr = `${String(killDate.getUTCHours()).padStart(2, '0')}:${String(killDate.getUTCMinutes()).padStart(2, '0')}:${String(killDate.getUTCSeconds()).padStart(2, '0')}`;
     
@@ -91,19 +88,21 @@ app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         const oldStates = { ...bossStates };
         const incomingStates = req.body.states;
-        const killTimeMs = Date.now(); // 記錄當下伺服器收到請求的時間
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
                 const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                const exactRespawnTimeMs = killTimeMs + intervalMs;
+                
+                // 完美對應：直接由前端傳過來的精確重生時間反推擊殺時間
+                // 這樣不管是快速登記還是手動輸入的時間，Discord 都能 100% 準確對應
+                const killTimeMs = newRespawnTime - intervalMs;
 
-                bossStates[bossName] = exactRespawnTimeMs;
+                bossStates[bossName] = newRespawnTime;
                 notifiedOneMin[bossName] = false;
 
                 if (channel) {
-                    await sendKillNotification(channel, bossName, killTimeMs, exactRespawnTimeMs);
+                    await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
                 }
             }
         }
