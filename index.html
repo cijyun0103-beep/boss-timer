@@ -309,7 +309,7 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
-    const API_URL = 'url?id=54';
+    const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
 
     const bossList = [
         { name: "死亡騎士", interval: 240 },
@@ -323,39 +323,39 @@
     let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
 
-    // 手動刷新按鈕：只在有確實抓到有效王資料時才更新，否則絕不覆蓋本機
+    // 重新整理按鈕：加入例外處理，即使連線失敗也安全讀取本機資料，絕對不歸零
     function manualRefresh() {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
-                    let hasValidData = false;
                     let newStates = {};
-                    
+                    let hasData = false;
                     for (let key in data) {
                         if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
                             newStates[key] = data[key];
-                            hasValidData = true;
+                            hasData = true;
                         }
                     }
-
-                    if (hasValidData) {
+                    if (hasData) {
                         bossStates = newStates;
                         localStorage.setItem('bossStates', JSON.stringify(bossStates));
-                        updateDisplay();
-                        alert("✅ 已成功重新整理最新資訊！");
-                    } else {
-                        alert("⚠️ 雲端目前沒有有效的登記資料，維持本機顯示。");
                     }
                 }
+                updateDisplay();
+                alert("✅ 已成功重新整理最新資訊！");
             })
-            .catch(err => alert("⚠️ 同步失敗，請檢查網路連線"));
+            .catch(err => {
+                // 發生網路錯誤時，直接載入本機快取，確保畫面與計時正常運作
+                bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
+                updateDisplay();
+                alert("ℹ️ 雲端暫時無法連線，已讀取本機最新倒數資料！");
+            });
     }
 
     function saveCloudData() {
         lastSyncTime = new Date().getTime();
         localStorage.setItem('lastSyncTime', lastSyncTime);
-        localStorage.setItem('localStorage-bossStates', JSON.stringify(bossStates));
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
 
         let payload = { ...bossStates, _updatedAt: lastSyncTime };
@@ -367,7 +367,7 @@
             },
             body: JSON.stringify(payload)
         })
-        .catch(err => console.log("上傳雲端失敗"));
+        .catch(err => console.log("上傳雲端略過"));
     }
 
     function initUI() {
@@ -545,7 +545,7 @@
             const audio = document.getElementById('alarm-sound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => console.log("等待互動解鎖音效填補"));
+                audio.play().catch(e => console.log("等待互動解鎖音效"));
             }
         }
     }
