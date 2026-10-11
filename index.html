@@ -259,7 +259,7 @@
             <span id="volume-text">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem;">測試</button>
         </div>
-        <button class="btn-refresh" onclick="loadData()">🔄 重新整理</button>
+        <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
     <div class="section-title">⚡ 快速登記</div>
@@ -306,6 +306,10 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
+    // 💡 自動抓取當前網址的主機名稱，支援 localhost 與區網 IP 連線
+	const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
+	const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
+
     const bossList = [
         { name: "死亡騎士", interval: 240 },
         { name: "將軍", interval: 360 },
@@ -317,29 +321,36 @@
     let bossStates = {};
     let alertedBosses = {};
 
-    // 直接讀取 GitHub 專案裡的 data.json 檔案
-    function loadData() {
-        fetch('data.json?t=' + new Date().getTime())
+    function fetchServerData(showAlert = false) {
+        fetch(SERVER_URL)
             .then(res => res.json())
             .then(data => {
-                if (data && typeof data === 'object') {
-                    bossStates = data;
+                if (data && data.bossStates) {
+                    bossStates = data.bossStates;
                     updateDisplay();
+                    if (showAlert) alert("✅ 已成功從伺服器同步資料！");
                 }
             })
             .catch(err => {
-                // 如果讀取失敗，退回使用本機緩存
-                bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
-                updateDisplay();
+                if (showAlert) alert("⚠️ 無法連線至伺服器，請確認電腦端 Node.js 正在執行中。");
             });
     }
 
-    function saveData() {
-        localStorage.setItem('bossStates', JSON.stringify(bossStates));
-        updateDisplay();
-        
-        // 同時產生下載 data.json 的提示，讓你可以直接上傳到 GitHub 更新雲端
-        console.log("資料已更新，請確保同步至 data.json");
+    function sendToServer() {
+        fetch(SERVER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ states: bossStates })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateDisplay();
+            }
+        })
+        .catch(err => console.log("上傳至伺服器失敗"));
     }
 
     function initUI() {
@@ -351,7 +362,7 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
-        loadData();
+        fetchServerData(false);
     }
 
     function updateVolume() {
@@ -378,7 +389,7 @@
         const respawnTime = targetDate.getTime() + boss.interval * 60000;
         bossStates[name] = respawnTime;
         alertedBosses[name] = false;
-        saveData();
+        sendToServer();
     }
 
     function manualRegister() {
@@ -411,9 +422,15 @@
 
     function resetAll() {
         if (confirm("確定要重置所有王的計時嗎？")) {
-            bossStates = {};
-            alertedBosses = {};
-            saveData();
+            fetch(RESET_URL, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        bossStates = {};
+                        alertedBosses = {};
+                        updateDisplay();
+                    }
+                });
         }
     }
 
@@ -441,89 +458,3 @@
 
             if (respawnTimeMs && respawnTimeMs > 0) {
                 const respawnDate = new Date(respawnTimeMs);
-                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
-
-                const diff = respawnTimeMs - now;
-                if (diff <= 0) {
-                    countdownStr = "🔥 已重生 / 時間到！";
-                    isUrgent = true;
-                    if (!alertedBosses[boss.name]) {
-                        needPlayAlarm = true;
-                        alertedBosses[boss.name] = true;
-                    }
-                } else {
-                    const totalSec = Math.floor(diff / 1000);
-                    const hours = Math.floor(totalSec / 3600);
-                    const minutes = Math.floor((totalSec % 3600) / 60);
-                    const seconds = totalSec % 60;
-                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
-                }
-            }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><b>${boss.name}</b></td>
-                <td>${boss.interval}分</td>
-                <td>${timeStr}</td>
-                <td style="${isUrgent ? 'color: #f87171; font-weight: bold;' : ''}">${countdownStr}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        sortedBossList.forEach(boss => {
-            const respawnTimeMs = bossStates[boss.name];
-            let timeStr = "尚未登記";
-            let countdownStr = "-";
-            let isUrgent = false;
-
-            if (respawnTimeMs && respawnTimeMs > 0) {
-                const respawnDate = new Date(respawnTimeMs);
-                timeStr = `${pad(respawnDate.getHours())}:${pad(respawnDate.getMinutes())}:${pad(respawnDate.getSeconds())}`;
-
-                const diff = respawnTimeMs - now;
-            if (diff <= 0) {
-                    countdownStr = "🔥 已重生 / 時間到！";
-                    isUrgent = true;
-                } else {
-                    const totalSec = Math.floor(diff / 1000);
-                    const hours = Math.floor(totalSec / 3600);
-                    const minutes = Math.floor((totalSec % 3600) / 60);
-                    const seconds = totalSec % 60;
-                    countdownStr = `${hours}時 ${minutes}分 ${seconds}秒`;
-                }
-            }
-
-            const card = document.createElement('div');
-            card.className = 'boss-card';
-            card.innerHTML = `
-                <div class="boss-card-header">
-                    <span>${boss.name}</span>
-                    <span style="font-size: 0.85rem; color: #999; font-weight: normal;">${boss.interval}分</span>
-                </div>
-                <div style="font-size: 0.9rem; color: #b0b0b0;">預計: ${timeStr}</div>
-                <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
-            `;
-            cardsContainer.appendChild(card);
-        });
-
-        if (needPlayAlarm) {
-            const audio = document.getElementById('alarm-sound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(e => console.log("等待互動解鎖音效"));
-            }
-        }
-    }
-
-    function pad(n) {
-        return n < 10 ? '0' + n : n;
-    }
-
-    window.onload = function() {
-        initUI();
-        setInterval(updateDisplay, 1000);
-    };
-</script>
-
-</body>
-</html>
