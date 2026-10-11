@@ -292,7 +292,6 @@
     ];
 
     let bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
-    // 記錄每一筆資料最後更新的時間戳記版本
     let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
 
@@ -301,14 +300,11 @@
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
-                    // 如果雲端有帶時間戳記版本號，且比本地新，才進行更新
                     const cloudTimestamp = data._updatedAt || 0;
-                    
                     if (cloudTimestamp > lastSyncTime) {
                         lastSyncTime = cloudTimestamp;
                         localStorage.setItem('lastSyncTime', lastSyncTime);
                         
-                        // 排除版本欄位，只留下王的時間
                         let newStates = {};
                         for (let key in data) {
                             if (key !== '_updatedAt') {
@@ -325,7 +321,6 @@
     }
 
     function saveCloudData() {
-        // 每次儲存時更新最新的時間戳記，確保比對版本有效
         lastSyncTime = new Date().getTime();
         localStorage.setItem('lastSyncTime', lastSyncTime);
         localStorage.setItem('bossStates', JSON.stringify(bossStates));
@@ -433,7 +428,15 @@
         const now = new Date().getTime();
         let needPlayAlarm = false;
 
-        bossList.forEach(boss => {
+        // 統一排序邏輯：有登記的依照重生時間先後排序，未登記的排在後面
+        let sortedBossList = [...bossList].sort((a, b) => {
+            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
+            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
+            return timeA - timeB;
+        });
+
+        // 1. 電腦版表格渲染（已加入自動排序）
+        sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
             let countdownStr = "-";
@@ -470,13 +473,8 @@
             tbody.appendChild(tr);
         });
 
-        let sortedMobileList = [...bossList].sort((a, b) => {
-            let timeA = bossStates[a.name] || Number.MAX_SAFE_INTEGER;
-            let timeB = bossStates[b.name] || Number.MAX_SAFE_INTEGER;
-            return timeA - timeB;
-        });
-
-        sortedMobileList.forEach(boss => {
+        // 2. 手機版卡片渲染（自動排序）
+        sortedBossList.forEach(boss => {
             const respawnTimeMs = bossStates[boss.name];
             let timeStr = "尚未登記";
             let countdownStr = "-";
