@@ -160,21 +160,39 @@
             margin-top: 4px;
         }
 
-        /* ---------------- 手機版專屬排版修正（螢幕小於 768px） ---------------- */
+        /* ---------------- 手機版專屬排版優化（螢幕小於 768px） ---------------- */
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
             .mobile-cards { display: flex !important; }
 
-            /* 快速登記按鈕兩欄並排 */
-            .btn-group button {
-                flex: 1 1 calc(50% - 4px);
-                padding: 12px;
-                font-size: 1.05rem;
+            .container {
+                display: flex;
+                flex-direction: column;
             }
 
-            /* 手動補登區塊改為垂直堆疊，按鈕變寬，徹底解決跑版外露問題 */
-            .manual-section {
+            /* 快速登記按鈕改成 2 欄網格，尺寸完全統一，最後一顆置中或延展 */
+            .btn-group {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                order: 2;
+            }
+            .btn-group button {
+                width: 100%;
+                padding: 12px;
+                font-size: 1.05rem;
+                box-sizing: border-box;
+            }
+            .btn-group button:nth-child(5) {
+                grid-column: span 2;
+            }
+
+            h2 { order: 1; }
+            .section-title:nth-of-type(1) { order: 1.5; }
+            .section-title:nth-of-type(2) { order: 3; }
+            .manual-section { 
+                order: 4; 
                 flex-direction: column;
                 align-items: stretch;
                 gap: 8px;
@@ -184,6 +202,15 @@
             .manual-section button {
                 width: 100%;
                 box-sizing: border-box;
+            }
+
+            .section-title:nth-of-type(3) { order: 5; }
+            .mobile-cards { order: 6; }
+
+            /* 將「全部重置」按鈕強制排到最下方 */
+            .btn-danger {
+                order: 7;
+                margin-top: 15px;
             }
         }
     </style>
