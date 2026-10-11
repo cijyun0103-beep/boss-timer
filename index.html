@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v5.0</title>
+    <title>天堂M 王表系統 v5.1</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -206,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.0</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.1</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -223,11 +223,11 @@
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
-            <button onclick="registerBoss('死亡騎士', new Date())">死亡騎士</button>
-            <button onclick="registerBoss('將軍', new Date())">將軍</button>
-            <button onclick="registerBoss('古代巨人', new Date())">古代巨人</button>
-            <button onclick="registerBoss('不死鳥', new Date())">不死鳥</button>
-            <button onclick="registerBoss('克特', new Date())">克特</button>
+            <button onclick="registerBoss('死亡騎士')">死亡騎士</button>
+            <button onclick="registerBoss('將軍')">將軍</button>
+            <button onclick="registerBoss('古代巨人')">古代巨人</button>
+            <button onclick="registerBoss('不死鳥')">不死鳥</button>
+            <button onclick="registerBoss('克特')">克特</button>
         </div>
     </div>
 
@@ -376,9 +376,11 @@
             });
     }
 
-    function registerBoss(bossName, timeObj) {
+    // 快速登記小工具：擊殺時間強制抓取「按下按鈕當下的系統時間」
+    function registerBoss(bossName) {
+        const now = new Date();
         const intervalMins = bossIntervals[bossName];
-        const killTimeMs = timeObj.getTime();
+        const killTimeMs = now.getTime();
         const respawnTimeMs = killTimeMs + (intervalMins * 60000);
         
         bossStates[bossName] = respawnTimeMs;
@@ -418,7 +420,14 @@
             killDate.setDate(killDate.getDate() - 1);
         }
 
-        registerBoss(bossName, killDate);
+        const intervalMins = bossIntervals[bossName];
+        const killTimeMs = killDate.getTime();
+        const respawnTimeMs = killTimeMs + (intervalMins * 60000);
+
+        bossStates[bossName] = respawnTimeMs;
+        notifiedLocalOneMin[bossName] = false;
+        syncToServer();
+
         document.getElementById('manual-time-input').value = '';
     }
 
@@ -453,7 +462,6 @@
                     respawnTimeMs += overdueCount * intervalMs;
                 }
 
-                // 檢查是否進入最後 1 分鐘（且尚未播報過）
                 const diff = respawnTimeMs - now;
                 if (diff > 0 && diff <= 60000) {
                     if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
@@ -495,7 +503,6 @@
         }
     }
 
-    // 讓手動輸入框支援 Enter 鍵直接登記
     document.getElementById('manual-time-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -503,7 +510,6 @@
         }
     });
 
-    // 快捷鍵監聽：按 K 鍵直接觸發手動補登
     document.addEventListener('keydown', (e) => {
         if (e.key === 'k' || e.key === 'K') {
             if (document.activeElement.tagName !== 'INPUT') {
