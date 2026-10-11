@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const app = express();
@@ -7,6 +8,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// 設定讓後端可以直接提供前端 index.html 所在的資料夾
+app.use(express.static(__dirname));
 
 let bossStates = {};
 let notifiedOneMin = {};
@@ -75,6 +79,7 @@ if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN).catch(err => console.log("Discord 登入失敗:", err));
 }
 
+// API 路由
 app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
 });
@@ -110,6 +115,7 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
+// 背景定時檢查：當王倒數剩 1 分鐘時發送通報並自動掛上 💩
 setInterval(async () => {
     if (!client.isReady()) return;
     const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
