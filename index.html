@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.4</title>
+    <title>天堂M 王表系統 v4.5</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -68,49 +68,12 @@
             cursor: pointer;
             user-select: none;
             font-size: 1.1rem;
-            transition: opacity 0.2s;
-        }
-        .volume-icon:hover {
-            opacity: 0.7;
         }
 
         .settings-bar input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
             width: 140px;
-            height: 6px;
-            background: #444;
-            border-radius: 3px;
-            outline: none !important;
             cursor: pointer;
             margin: 0 4px;
-            box-shadow: none !important;
-            border: none !important;
-        }
-
-        .settings-bar input[type="range"]:focus,
-        .settings-bar input[type="range"]:active {
-            outline: none !important;
-            box-shadow: none !important;
-            border: none !important;
-        }
-
-        .settings-bar input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            cursor: pointer;
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            transition: transform 0.1s;
-        }
-
-        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
         }
 
         .btn-refresh {
@@ -121,7 +84,6 @@
             font-size: 0.9rem;
             border-radius: 6px;
             cursor: pointer;
-            transition: background 0.2s;
         }
         .btn-refresh:hover {
             background-color: var(--success-hover);
@@ -142,9 +104,7 @@
             font-size: 1rem;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s;
         }
-
         button:hover {
             background-color: var(--accent-hover);
         }
@@ -219,72 +179,24 @@
             display: none;
         }
 
-        .btn-quick-item {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            font-size: 0.9rem;
-            border-radius: 6px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .btn-quick-item:hover {
-            background-color: var(--accent-hover);
-        }
-
         @media screen and (max-width: 768px) {
-            .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
             .pc-widget-panel { display: none !important; }
             .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
-
-            .boss-card {
-                background: #262626;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 10px;
-            }
-            .boss-card-info {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .boss-card-header {
-                font-weight: bold;
-                font-size: 0.95rem;
-                color: #999;
-                display: flex;
-                justify-content: space-between;
-            }
-            .boss-card-countdown {
-                font-size: 1.05rem;
-                font-weight: bold;
-                color: #f87171;
-            }
-            
-            .manual-section {
-                flex-direction: column;
-                align-items: stretch;
-            }
+            .manual-section { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.4</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.5</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
             <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
             <label>音量:</label>
-            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" oninput="updateVolume()">
+            <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume()">
             <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
         </div>
@@ -334,12 +246,9 @@
     <button class="btn-danger" onclick="resetAll()">全部重置</button>
 </div>
 
-<audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
 <script>
     const SERVER_URL = 'https://boss-timer-9c6e.onrender.com/api/bosses';
     const RESET_URL = 'https://boss-timer-9c6e.onrender.com/api/reset';
-    const DISCORD_API_URL = 'https://boss-timer-9c6e.onrender.com/api/discord-alert';
 
     const bossList = [
         { name: "死亡騎士", interval: 240 },
@@ -351,7 +260,7 @@
 
     let bossStates = {};
     let alertedBosses = {};
-    let lastVolume = 0.5;
+    let lastVolume = 50;
 
     function fetchServerData(showAlert = false) {
         fetch(SERVER_URL)
@@ -371,29 +280,9 @@
     function sendToServer() {
         fetch(SERVER_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ states: bossStates })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                updateDisplay();
-            }
-        })
-        .catch(err => console.log("上傳至雲端伺服器失敗"));
-    }
-
-    // 💡 透過後端發送 Discord 訊息
-    function sendDiscordAlert(bossName, timeStr) {
-        fetch(DISCORD_API_URL, {
-            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: `🚨 **[天堂M 王表通知]** 警告！**${bossName}** 將於 1 分鐘後（${timeStr}）重生，請血盟成員準備集合！`
-            })
-        }).catch(err => console.log("Discord 警報發送失敗"));
+            body: JSON.stringify({ states: bossStates })
+        }).catch(err => console.log("上傳失敗"));
     }
 
     function initUI() {
@@ -408,18 +297,13 @@
 
     function updateVolume() {
         const slider = document.getElementById('volume-slider');
-        const audio = document.getElementById('alarm-sound');
         const textElem = document.getElementById('volume-text');
         const iconElem = document.getElementById('volume-icon');
-        if (!slider || !audio || !textElem || !iconElem) return;
+        if (!slider || !textElem || !iconElem) return;
 
-        const vol = parseFloat(slider.value);
-        audio.volume = vol;
-        textElem.innerText = Math.round(vol * 100) + '%';
+        const vol = parseInt(slider.value, 10);
+        textElem.innerText = vol + '%';
         localStorage.setItem('alarmVolume', vol);
-
-        const percentage = vol * 100;
-        slider.style.background = `linear-gradient(to right, var(--accent-color) ${percentage}%, #444 ${percentage}%)`;
 
         if (vol > 0) {
             lastVolume = vol;
@@ -433,21 +317,42 @@
         const slider = document.getElementById('volume-slider');
         if (!slider) return;
 
-        const currentVol = parseFloat(slider.value);
+        const currentVol = parseInt(slider.value, 10);
         if (currentVol > 0) {
             lastVolume = currentVol;
             slider.value = 0;
         } else {
-            slider.value = lastVolume > 0 ? lastVolume : 0.5;
+            slider.value = lastVolume > 0 ? lastVolume : 50;
         }
         updateVolume();
     }
 
     function testAudio() {
-        const audio = document.getElementById('alarm-sound');
-        if (!audio) return;
-        audio.currentTime = 0;
-        audio.play().catch(e => alert("請先在畫面任意處點擊一下解鎖音效！"));
+        const slider = document.getElementById('volume-slider');
+        const vol = slider ? parseInt(slider.value, 10) : 50;
+
+        if (vol <= 0) {
+            alert("目前音量為 0% (已靜音)，語音播報將不會發出聲音。");
+            return;
+        }
+
+        speakText("音量測試正常");
+    }
+
+    function speakText(text) {
+        const slider = document.getElementById('volume-slider');
+        const vol = slider ? parseInt(slider.value, 10) : 50;
+        if (vol <= 0) return;
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW';
+            utterance.rate = 1.0;
+            utterance.volume = vol / 100;
+            window.speechSynthesis.speak(utterance);
+        }
     }
 
     function registerBoss(name, targetDate) {
@@ -458,6 +363,7 @@
         bossStates[name] = respawnTime;
         alertedBosses[name] = { min1: false };
         sendToServer();
+        updateDisplay();
     }
 
     function handleKey(event) {
@@ -473,7 +379,6 @@
 
         const selectName = selectElem.value;
         const timeInput = timeInputElem.value.trim();
-
         let hours = 0, minutes = 0, seconds = 0;
 
         if (/^\d{4}$/.test(timeInput)) {             hours = parseInt(timeInput.substring(0, 2), 10);             minutes = parseInt(timeInput.substring(2, 4), 10);             seconds = 0;         } else if (/^\d{6}$/.test(timeInput)) {
@@ -482,11 +387,6 @@
             seconds = parseInt(timeInput.substring(4, 6), 10);
         } else {
             alert("請輸入正確的 4 碼 (例如 1605) 或 6 碼 (例如 160530) 時間格式");
-            return;
-        }
-
-        if (hours > 23 || minutes > 59 || seconds > 59) {
-            alert("時間格式錯誤（小時 00-23，分鐘 00-59，秒數 00-59）");
             return;
         }
 
@@ -508,15 +408,6 @@
                         updateDisplay();
                     }
                 });
-        }
-    }
-
-    function speakText(text) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-TW';
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
         }
     }
 
@@ -567,11 +458,9 @@
 
                 const diff = displayRespawnTimeMs - now;
 
-                // 💡 當倒數剩 1 分鐘以內且大於 0 時，同時觸發語音與 Discord 通知
                 if (diff <= 60000 && diff > 0 && !alertedBosses[boss.name].min1) {
                     alertedBosses[boss.name].min1 = true;
                     speakText(`${boss.name}預計一分鐘後重生`);
-                    sendDiscordAlert(boss.name, timeStr);
                 }
 
                 if (diff <= 60000) {
@@ -602,13 +491,10 @@
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
-                <button class="btn-quick-item" onclick="registerBoss('${boss.name}', new Date())">${boss.name}</button>
-                <div class="boss-card-info">
-                    <div class="boss-card-header">
-                        <span style="${isOverdue ? 'color: #f87171;' : ''}">預計: ${timeStr}</span>
-                        <span>${boss.interval}分</span>
-                    </div>
-                    <div class="boss-card-countdown" style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
+                <button onclick="registerBoss('${boss.name}', new Date())">${boss.name}</button>
+                <div style="flex: 1;">
+                    <div>預計: ${timeStr}</div>
+                    <div style="${isUrgent ? 'color: #f87171;' : 'color: #60a5fa;'}">${countdownStr}</div>
                 </div>
             `;
             cardsContainer.appendChild(card);
