@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.8</title>
+    <title>天堂M 王表系統 v4.9</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -206,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.8</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.9</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -257,6 +257,8 @@
 </div>
 
 <script>
+    const API_BASE = 'https://boss-timer-9c6e.onrender.com';
+
     const bossIntervals = {
         "死亡騎士": 240,
         "將軍": 360,
@@ -342,7 +344,7 @@
     }
 
     function syncToServer() {
-        fetch('/api/bosses', {
+        fetch(`${API_BASE}/api/bosses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ states: bossStates })
@@ -358,7 +360,7 @@
     }
 
     function fetchServerData(showAlert = false) {
-        fetch('/api/bosses')
+        fetch(`${API_BASE}/api/bosses`)
             .then(res => res.json())
             .then(data => {
                 if (data && data.bossStates) {
@@ -419,7 +421,7 @@
 
     function resetAll() {
         if (confirm("確定要重置所有王表紀錄嗎？")) {
-            fetch('/api/reset', { method: 'POST' })
+            fetch(`${API_BASE}/api/reset`, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     bossStates = data.bossStates || {};
@@ -480,6 +482,15 @@
         }
     }
 
+    // 讓手動輸入框支援 Enter 鍵直接登記
+    document.getElementById('manual-time-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            registerManualBoss();
+        }
+    });
+
+    // 快捷鍵監聽：按 K 鍵直接觸發手動補登
     document.addEventListener('keydown', (e) => {
         if (e.key === 'k' || e.key === 'K') {
             if (document.activeElement.tagName !== 'INPUT') {
