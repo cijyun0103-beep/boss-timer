@@ -309,6 +309,7 @@
 <audio id="alarm-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
 <script>
+    // 已換成你真正的 npoint API 網址
     const API_URL = 'https://api.npoint.io/ecbfdacfec3a2d20f658';
 
     const bossList = [
@@ -323,21 +324,50 @@
     let lastSyncTime = parseInt(localStorage.getItem('lastSyncTime')) || 0;
     let alertedBosses = {};
 
-    // 重新整理按鈕：加入例外處理，即使連線失敗也安全讀取本機資料，絕對不歸零
+    function fetchCloudData() {
+        fetch(API_URL + '?t=' + new Date().getTime())
+            .then(response => response.json())
+            .then(data => {
+                if (data && typeof data === 'object') {
+                    const cloudTimestamp = data._updatedAt || 0;
+                    
+                    if (cloudTimestamp > lastSyncTime) {
+                        lastSyncTime = cloudTimestamp;
+                        localStorage.setItem('lastSyncTime', lastSyncTime);
+                        
+                        let newStates = {};
+                        for (let key in data) {
+                            if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
+                                newStates[key] = data[key];
+                            }
+                        }
+                        if (Object.keys(newStates).length > 0) {
+                            bossStates = newStates;
+                            localStorage.setItem('bossStates', JSON.stringify(bossStates));
+                            updateDisplay();
+                        }
+                    }
+                }
+            })
+            .catch(err => console.log("背景同步略過"));
+    }
+
     function manualRefresh() {
         fetch(API_URL + '?t=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
                 if (data && typeof data === 'object') {
+                    const cloudTimestamp = data._updatedAt || 0;
+                    lastSyncTime = cloudTimestamp;
+                    localStorage.setItem('lastSyncTime', lastSyncTime);
+                    
                     let newStates = {};
-                    let hasData = false;
                     for (let key in data) {
                         if (key !== '_updatedAt' && typeof data[key] === 'number' && data[key] > 0) {
                             newStates[key] = data[key];
-                            hasData = true;
                         }
                     }
-                    if (hasData) {
+                    if (Object.keys(newStates).length > 0) {
                         bossStates = newStates;
                         localStorage.setItem('bossStates', JSON.stringify(bossStates));
                     }
@@ -346,10 +376,8 @@
                 alert("✅ 已成功重新整理最新資訊！");
             })
             .catch(err => {
-                // 發生網路錯誤時，直接載入本機快取，確保畫面與計時正常運作
-                bossStates = JSON.parse(localStorage.getItem('bossStates')) || {};
                 updateDisplay();
-                alert("ℹ️ 雲端暫時無法連線，已讀取本機最新倒數資料！");
+                alert("ℹ️ 雲端連線失敗，已讀取本機最新倒數資料！");
             });
     }
 
@@ -367,7 +395,7 @@
             },
             body: JSON.stringify(payload)
         })
-        .catch(err => console.log("上傳雲端略過"));
+        .catch(err => console.log("上傳雲端失敗"));
     }
 
     function initUI() {
@@ -379,6 +407,7 @@
             if (textElem) textElem.innerText = Math.round(savedVol * 100) + '%';
         }
         updateVolume();
+        fetchCloudData();
         updateDisplay();
     }
 
@@ -557,6 +586,7 @@
     window.onload = function() {
         initUI();
         setInterval(updateDisplay, 1000);
+        setInterval(fetchCloudData, 5000);
     };
 </script>
 
