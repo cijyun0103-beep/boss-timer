@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v4.9</title>
+    <title>天堂M 王表系統 v5.0</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -206,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v4.9</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v5.0</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -271,6 +271,7 @@
     let volume = 0.5;
     let isMuted = false;
     let audioCtx = null;
+    let notifiedLocalOneMin = {};
 
     function initAudio() {
         if (!audioCtx) {
@@ -301,6 +302,7 @@
     }
 
     function testAudio() {
+        initAudio();
         playBeep(1000, 0.3);
     }
 
@@ -380,6 +382,7 @@
         const respawnTimeMs = killTimeMs + (intervalMins * 60000);
         
         bossStates[bossName] = respawnTimeMs;
+        notifiedLocalOneMin[bossName] = false;
         syncToServer();
     }
 
@@ -425,6 +428,7 @@
                 .then(res => res.json())
                 .then(data => {
                     bossStates = data.bossStates || {};
+                    notifiedLocalOneMin = {};
                     renderTable();
                 });
         }
@@ -449,6 +453,16 @@
                     respawnTimeMs += overdueCount * intervalMs;
                 }
 
+                // 檢查是否進入最後 1 分鐘（且尚未播報過）
+                const diff = respawnTimeMs - now;
+                if (diff > 0 && diff <= 60000) {
+                    if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
+                        notifiedLocalOneMin[name] = respawnTimeMs;
+                        playBeep(800, 0.4);
+                        setTimeout(() => playBeep(1200, 0.4), 300);
+                    }
+                }
+
                 const respawnDate = new Date(respawnTimeMs);
                 const hh = String(respawnDate.getHours()).padStart(2, '0');
                 const mm = String(respawnDate.getMinutes()).padStart(2, '0');
@@ -459,7 +473,6 @@
                     respawnStr += ` (過${overdueCount})`;
                 }
 
-                const diff = respawnTimeMs - now;
                 if (diff > 0) {
                     const totalSec = Math.floor(diff / 1000);
                     const h = Math.floor(totalSec / 3600);
