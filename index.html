@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v1.6</title>
+    <title>天堂M 王表系統 v1.9</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -171,7 +171,7 @@
         @media screen and (max-width: 768px) {
             .settings-bar { display: none !important; }
             .desktop-table { display: none !important; }
-            .top-quick-buttons, .top-quick-buttons-title { display: none !important; } /* 隱藏手機上的快速登記標題與按鈕 */
+            .top-quick-buttons, .top-quick-buttons-title { display: none !important; }
             .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; margin-top: 10px; }
 
             .boss-card {
@@ -213,7 +213,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.6</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v1.9</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -250,7 +250,7 @@
         <tbody id="boss-table-body"></tbody>
     </table>
 
-    <!-- 手機版卡片：按鈕直接在各個王的前方（已無多餘字眼） -->
+    <!-- 手機版卡片 -->
     <div class="mobile-cards" id="boss-cards-container"></div>
 
     <div class="section-title" style="margin-top: 20px;">手動補登</div>
@@ -262,7 +262,8 @@
             <option value="不死鳥">不死鳥 (480分)</option>
             <option value="克特">克特 (600分)</option>
         </select>
-        <input type="text" id="manual-time" placeholder="例如 0354">
+        <!-- 💡 加上 onkeydown 監聽 Enter 鍵 -->
+        <input type="text" id="manual-time" placeholder="例如 120215" maxlength="6" onkeydown="handleKey(event)">
         <button onclick="manualRegister()">登記擊殺 (K)</button>
     </div>
 
@@ -357,6 +358,12 @@
         sendToServer();
     }
 
+    function handleKey(event) {
+        if (event.key === 'Enter') {
+            manualRegister();
+        }
+    }
+
     function manualRegister() {
         const selectElem = document.getElementById('boss-select');
         const timeInputElem = document.getElementById('manual-time');
@@ -365,21 +372,22 @@
         const selectName = selectElem.value;
         const timeInput = timeInputElem.value.trim();
 
-        if (!/^\d{4}$/.test(timeInput)) {
-            alert("請輸入正確的時間格式，例如 0354 或 1435");
+        if (!/^\d{6}$/.test(timeInput)) {
+            alert("請輸入正確的 6 碼時間格式，例如 120215");
             return;
         }
 
         const hours = parseInt(timeInput.substring(0, 2), 10);
         const minutes = parseInt(timeInput.substring(2, 4), 10);
+        const seconds = parseInt(timeInput.substring(4, 6), 10);
 
-        if (hours > 23 || minutes > 59) {
-            alert("時間格式錯誤（小時 00-23，分鐘 00-59）");
+        if (hours > 23 || minutes > 59 || seconds > 59) {
+            alert("時間格式錯誤（小時 00-23，分鐘 00-59，秒數 00-59）");
             return;
         }
 
         const now = new Date();
-        const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+        const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
 
         registerBoss(selectName, targetDate);
         timeInputElem.value = '';
@@ -452,7 +460,7 @@
             `;
             tbody.appendChild(tr);
 
-            // 手機版卡片：按鈕在左側，王名與重生時間在右側
+            // 手機版卡片
             const card = document.createElement('div');
             card.className = 'boss-card';
             card.innerHTML = `
