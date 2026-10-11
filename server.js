@@ -8,8 +8,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// 設定讓後端可以直接提供前端 index.html 所在的資料夾
 app.use(express.static(__dirname));
 
 let bossStates = {};
@@ -79,7 +77,6 @@ if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN).catch(err => console.log("Discord 登入失敗:", err));
 }
 
-// API 路由
 app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
 });
