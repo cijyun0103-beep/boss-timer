@@ -35,7 +35,6 @@ client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
-// 共用的發送 Discord 擊殺通知函數
 async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
     if (!channel) return;
     const killDate = new Date(killTimeMs);
@@ -47,7 +46,6 @@ async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs
     await channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
 }
 
-// 監聽 Discord 上的表情符號反應（點擊 💩 登記擊殺）
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
     if (reaction.partial) await reaction.fetch();
@@ -77,7 +75,6 @@ if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN).catch(err => console.log("Discord 登入失敗:", err));
 }
 
-// API 路由
 app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
 });
@@ -113,7 +110,6 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 背景定時檢查：當王倒數剩 1 分鐘時發送通報並自動掛上 💩
 setInterval(async () => {
     if (!client.isReady()) return;
     const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
