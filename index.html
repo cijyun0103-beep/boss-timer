@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.8</title>
+    <title>天堂M 王表系統 v6.9</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,7 +177,7 @@
             flex: 1;
         }
 
-        /* 根據你的要求：完全取消上方快速登記小工具 */
+        /* 隱藏上方舊的快速登記工具區塊 */
         .pc-widget-panel {
             display: none !important;
         }
@@ -197,20 +197,20 @@
             background-color: #2a2a2a;
         }
 
-        /* 將 BOSS 名稱變成可點擊的快速登記按鈕 */
+        /* 藍底白字的 BOSS 名稱快速登記按鈕樣式 */
         .boss-click-btn {
-            background: none;
+            background-color: var(--accent-color);
+            color: white;
             border: none;
-            color: #60a5fa;
+            padding: 6px 12px;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            border-radius: 6px;
             cursor: pointer;
-            padding: 0;
-            text-align: left;
-            text-decoration: underline;
+            transition: background-color 0.1s;
         }
         .boss-click-btn:hover {
-            color: #93c5fd;
+            background-color: var(--accent-hover);
         }
 
         /* 倒數小於1分鐘的紅色樣式 */
@@ -233,7 +233,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.8</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.9</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -246,7 +246,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <div class="section-title">📊 王表現況（點擊 BOSS 名稱直接快速登記）</div>
+    <div class="section-title">📊 王表現況</div>
     <table class="desktop-table">
         <thead>
             <tr>
