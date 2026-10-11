@@ -19,7 +19,6 @@ const bossIntervals = {
     "克特": 600
 };
 
-// 💡 從 Render 的環境變數安全讀取，不會有安全警告
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
 
@@ -32,11 +31,11 @@ const client = new Client({
     ]
 });
 
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
-// 監聽 Discord 上的表情符號反應（點擊 ✅ 自動登記擊殺）
+// 監聽 Discord 上的表情符號反應（改為監聽 💩）
 client.on('messageReactionAdd', async (reaction, user) => {
     if (user.bot) return;
     if (reaction.partial) await reaction.fetch();
@@ -47,18 +46,24 @@ client.on('messageReactionAdd', async (reaction, user) => {
         
         for (const bossName of Object.keys(bossIntervals)) {
             if (embed.description && embed.description.includes(bossName)) {
-                if (reaction.emoji.name === '✅') {
+                // 點擊 💩 觸發擊殺登記
+                if (reaction.emoji.name === '💩') {
                     const now = new Date();
+                    const killTimeMs = now.getTime(); // 記錄擊殺當下時間
                     const intervalMs = bossIntervals[bossName] * 60000;
-                    const respawnTimeMs = now.getTime() + intervalMs;
+                    const respawnTimeMs = killTimeMs + intervalMs; // 計算重生時間
 
                     bossStates[bossName] = respawnTimeMs;
                     notifiedOneMin[bossName] = false;
 
-                    const respawnDate = new Date(respawnTimeMs);
-                    const timeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+                    const killDate = new Date(killTimeMs);
+                    const killTimeStr = `${String(killDate.getHours()).padStart(2, '0')}:${String(killDate.getMinutes()).padStart(2, '0')}:${String(killDate.getSeconds()).padStart(2, '0')}`;
 
-                    await message.channel.send(`【**${bossName}**】已被登記擊殺！預計於 **${timeStr}** 重生。`);
+                    const respawnDate = new Date(respawnTimeMs);
+                    const respawnTimeStr = `${String(respawnDate.getHours()).padStart(2, '0')}:${String(respawnDate.getMinutes()).padStart(2, '0')}:${String(respawnDate.getSeconds()).padStart(2, '0')}`;
+
+                    // 同時顯示擊殺時間與重生時間
+                    await message.channel.send(`【**${bossName}**】於 **${killTimeStr}** 被擊殺！預計於 **${respawnTimeStr}** 重生。`);
                 }
             }
         }
@@ -89,7 +94,7 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 背景定時檢查：剩 1 分鐘時發送通報並掛上 ✅
+// 背景定時檢查：當王倒數剩 1 分鐘時發送通報並自動掛上 💩
 setInterval(async () => {
     if (!client.isReady()) return;
     const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
@@ -119,12 +124,12 @@ setInterval(async () => {
                 const embed = new EmbedBuilder()
                     .setColor('#ef4444')
                     .setTitle('🚨 【重要快訊】')
-                    .setDescription(`【**${name}**】將於 **1 分鐘內**（${timeStr}）重生，請點擊下方 ✅ 反應來記錄擊殺！`)
+                    .setDescription(`【**${name}**】將於 **1 分鐘內**（${timeStr}）重生，請點擊下方 💩 反應來記錄擊殺！`)
                     .setTimestamp();
 
                 const sentMsg = await channel.send({ embeds: [embed] }).catch(err => console.log("發送失敗:", err));
                 if (sentMsg) {
-                    await sentMsg.react('✅');
+                    await sentMsg.react('💩'); // 自動幫訊息貼上 💩 圖示
                 }
             }
         }
