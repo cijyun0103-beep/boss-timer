@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// 使用記憶體與全域狀態儲存，確保只要不按重置，資料就永不消失
 let bossStates = {};
 let notifiedOneMin = {};
 
@@ -93,9 +94,6 @@ app.post('/api/bosses', async (req, res) => {
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime !== oldStates[bossName]) {
                 const intervalMs = (bossIntervals[bossName] || 240) * 60000;
-                
-                // 完美對應：直接由前端傳過來的精確重生時間反推擊殺時間
-                // 這樣不管是快速登記還是手動輸入的時間，Discord 都能 100% 準確對應
                 const killTimeMs = newRespawnTime - intervalMs;
 
                 bossStates[bossName] = newRespawnTime;
@@ -113,6 +111,7 @@ app.post('/api/bosses', async (req, res) => {
     }
 });
 
+// 只有在手動按下「全部重置」時，才會清空所有王的紀錄
 app.post('/api/reset', (req, res) => {
     bossStates = {};
     notifiedOneMin = {};
