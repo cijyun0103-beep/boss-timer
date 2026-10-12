@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v7.0</title>
+    <title>天堂M 王表系統 v7.1</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,7 +177,7 @@
             flex: 1;
         }
 
-        /* 完整保留上方 PC 快速登記小工具 */
+        /* 保留上方 PC 快速登記小工具 */
         .pc-widget-panel {
             background: #18181b;
             border: 1px solid #27272a;
@@ -215,22 +215,6 @@
             background-color: #2a2a2a;
         }
 
-        /* 藍底白字的 BOSS 名稱快速登記按鈕樣式 */
-        .boss-click-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            font-weight: bold;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.1s;
-        }
-        .boss-click-btn:hover {
-            background-color: var(--accent-hover);
-        }
-
         /* 倒數小於1分鐘的紅色樣式 */
         .countdown-danger {
             color: var(--warning-text);
@@ -244,7 +228,7 @@
         }
 
         @media screen and (max-width: 768px) {
-            .pc-widget-panel { display: none !important; } /* 手機版維持不顯示上方小工具，改用點擊表格名稱登記 */
+            .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
         }
     </style>
@@ -252,7 +236,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.0</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.1</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -265,7 +249,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具（完整恢復） -->
+    <!-- PC 快速登記小工具 -->
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
@@ -537,7 +521,7 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><button class="boss-click-btn" onclick="registerBoss('${name}')" title="點擊快速登記">${name}</button></td>
+                <td><strong>${name}</strong></td>
                 <td>${intervalMins}分</td>
                 <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
