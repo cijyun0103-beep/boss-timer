@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v7.6</title>
+    <title>天堂M 王表系統 v7.8</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,7 +177,7 @@
             flex: 1;
         }
 
-        /* 桌面版專用上方小工具 */
+        /* 完整保留 PC 快速登記小工具 */
         .pc-widget-panel {
             background: #18181b;
             border: 1px solid #27272a;
@@ -215,21 +215,6 @@
             background-color: #2a2a2a;
         }
 
-        /* 手機版按鈕樣式 */
-        .mobile-boss-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            font-weight: bold;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .mobile-boss-btn:hover {
-            background-color: var(--accent-hover);
-        }
-
         /* 倒數小於1分鐘的紅色樣式 */
         .countdown-danger {
             color: var(--warning-text);
@@ -242,23 +227,16 @@
             font-weight: bold;
         }
 
-        /* 控制 PC版 / 手機版 元素的顯示與隱藏 */
-        .only-pc { display: table-row; }
-        .only-mobile { display: none; }
-
         @media screen and (max-width: 768px) {
-            .pc-widget-panel { display: none !important; } /* 手機版隱藏上方小工具 */
+            .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
-            
-            .only-pc { display: none !important; }     /* 手機版隱藏 PC 純文字行 */
-            .only-mobile { display: table-row !important; } /* 手機版顯示按鈕行 */
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.6</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.8</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -271,7 +249,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具（手機版會自動隱藏） -->
+    <!-- PC 快速登記小工具 -->
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
@@ -495,21 +473,41 @@
         tbody.innerHTML = '';
         const now = new Date().getTime();
 
+        // 收集所有王的資料並計算排序時間
+        let bossList = [];
         for (const [name, intervalMins] of Object.entries(bossIntervals)) {
             let respawnTimeMs = bossStates[name];
-            let respawnStr = "尚未登記";
-            let countdownStr = "-";
-            let countdownClass = ""; 
+            let sortTime = respawnTimeMs ? respawnTimeMs : Number.MAX_SAFE_INTEGER;
+            let overdueCount = 0;
             const intervalMs = intervalMins * 60000;
 
             if (respawnTimeMs) {
-                let overdueCount = 0;
-                if (now > respawnTimeMs) {
-                    const diffTime = now - respawnTimeMs;
+                let tempRespawn = respawnTimeMs;
+                if (now > tempRespawn) {
+                    const diffTime = now - tempRespawn;
                     overdueCount = Math.floor(diffTime / intervalMs) + 1;
-                    respawnTimeMs += overdueCount * intervalMs;
+                    tempRespawn += overdueCount * intervalMs;
                 }
+                sortTime = tempRespawn;
+            }
 
+            bossList.push({ name, intervalMins, respawnTimeMs: respawnTimeMs ? (respawnTimeMs + overdueCount * intervalMs) : null, sortTime, overdueCount });
+        }
+
+        // 依照預計重生時間由快到慢排序
+        bossList.sort((a, b) => a.sortTime - b.sortTime);
+
+        // 渲染表格 (PC 版維持純文字名稱，不亂加手機按鈕)
+        for (const boss of bossList) {
+            const name = boss.name;
+            const intervalMins = boss.intervalMins;
+            let respawnTimeMs = boss.respawnTimeMs;
+            let overdueCount = boss.overdueCount;
+            let respawnStr = "尚未登記";
+            let countdownStr = "-";
+            let countdownClass = ""; 
+
+            if (respawnTimeMs) {
                 const diff = respawnTimeMs - now;
 
                 if (diff > 0 && diff <= 60000) {
@@ -542,12 +540,8 @@
             }
 
             const tr = document.createElement('tr');
-            // 同時產生 PC 版行與手機版行，由 CSS 決定顯示哪一個
             tr.innerHTML = `
-                <!-- PC 版：純文字名稱 -->
-                <td class="only-pc"><strong>${name}</strong></td>
-                <!-- 手機版：帶有按鈕的名稱 -->
-                <td class="only-mobile"><button class="mobile-boss-btn" onclick="registerBoss('${name}')">${name}</button></td>
+                <td><strong>${name}</strong></td>
                 <td>${intervalMins}分</td>
                 <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
