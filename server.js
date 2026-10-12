@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const app = express();
@@ -8,16 +10,41 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// 使用記憶體與全域狀態儲存，確保只要不按重置，資料就永不消失
+const DATA_FILE = path.join(__dirname, 'data.json');
+
 let bossStates = {};
 let notifiedOneMin = {};
 
+// 啟動時讀取存檔
+function loadData() {
+    try {
+        if (fs.existsSync(DATA_FILE)) {
+            const rawData = fs.readFileSync(DATA_FILE, 'utf8');
+            bossStates = JSON.parse(rawData);
+            console.log("已成功載入王表紀錄:", bossStates);
+        }
+    } catch (e) {
+        console.log("讀取存檔失敗:", e);
+    }
+}
+loadData();
+
+// 強制寫入檔案的存檔函式
+function saveData() {
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(bossStates, null, 2));
+        console.log("已成功將王表紀錄寫入檔案:", bossStates);
+    } catch (e) {
+        console.log("寫入存檔失敗:", e);
+    }
+}
+
 const bossIntervals = {
-    "死亡騎士": 240, // 4小時
-    "將軍": 360,     // 6小時
-    "古代巨人": 510, // 8.5小時
-    "不死鳥": 480,   // 8小時
-    "克特": 600      // 10小時
+    "死亡騎士": 240,
+    "將軍": 360,
+    "古代巨人": 510,
+    "不死鳥": 480,
+    "克特": 600
 };
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -69,6 +96,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                     bossStates[bossName] = respawnTimeMs;
                     notifiedOneMin[bossName] = false;
+                    saveData(); // 立即存檔
 
                     await sendKillNotification(message.channel, bossName, killTimeMs, respawnTimeMs);
                 }
@@ -82,11 +110,13 @@ if (DISCORD_BOT_TOKEN) {
 }
 
 app.get('/api/bosses', (req, res) => {
+    loadData(); // 每次讀取前重新確認檔案內容
     res.json({ bossStates });
 });
 
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
+        loadData();
         const oldStates = { ...bossStates };
         const incomingStates = req.body.states;
         const channel = client.channels.cache.get(TARGET_CHANNEL_ID);
@@ -98,6 +128,7 @@ app.post('/api/bosses', async (req, res) => {
 
                 bossStates[bossName] = newRespawnTime;
                 notifiedOneMin[bossName] = false;
+                saveData(); // 立即存檔
 
                 if (channel) {
                     await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
@@ -111,10 +142,10 @@ app.post('/api/bosses', async (req, res) => {
     }
 });
 
-// 只有在手動按下「全部重置」時，才會清空所有王的紀錄
 app.post('/api/reset', (req, res) => {
     bossStates = {};
     notifiedOneMin = {};
+    saveData(); // 寫入空檔（清空）
     res.json({ success: true, bossStates });
 });
 

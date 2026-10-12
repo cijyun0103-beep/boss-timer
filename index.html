@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v7.8</title>
+    <title>天堂M 王表系統 v8.0</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -215,6 +215,25 @@
             background-color: #2a2a2a;
         }
 
+        /* 預設 PC 版顯示純文字名稱 */
+        .only-pc { display: table-cell; }
+        .only-mobile { display: none; }
+
+        /* 手機版按鈕樣式 */
+        .mobile-boss-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .mobile-boss-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
         /* 倒數小於1分鐘的紅色樣式 */
         .countdown-danger {
             color: var(--warning-text);
@@ -230,13 +249,17 @@
         @media screen and (max-width: 768px) {
             .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
+            
+            /* 手機版隱藏 PC 純文字，顯示按鈕 */
+            .only-pc { display: none !important; }
+            .only-mobile { display: table-cell !important; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.8</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.0</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -249,7 +272,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具 -->
+    <!-- PC 快速登記小工具（完整保留） -->
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
@@ -473,7 +496,6 @@
         tbody.innerHTML = '';
         const now = new Date().getTime();
 
-        // 收集所有王的資料並計算排序時間
         let bossList = [];
         for (const [name, intervalMins] of Object.entries(bossIntervals)) {
             let respawnTimeMs = bossStates[name];
@@ -494,10 +516,8 @@
             bossList.push({ name, intervalMins, respawnTimeMs: respawnTimeMs ? (respawnTimeMs + overdueCount * intervalMs) : null, sortTime, overdueCount });
         }
 
-        // 依照預計重生時間由快到慢排序
         bossList.sort((a, b) => a.sortTime - b.sortTime);
 
-        // 渲染表格 (PC 版維持純文字名稱，不亂加手機按鈕)
         for (const boss of bossList) {
             const name = boss.name;
             const intervalMins = boss.intervalMins;
@@ -541,7 +561,8 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${name}</strong></td>
+                <td class="only-pc"><strong>${name}</strong></td>
+                <td class="only-mobile"><button class="mobile-boss-btn" onclick="registerBoss('${name}')">${name}</button></td>
                 <td>${intervalMins}分</td>
                 <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
