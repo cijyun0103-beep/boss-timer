@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v7.1</title>
+    <title>天堂M 王表系統 v7.3</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -130,7 +130,7 @@
 
         .section-title {
             font-size: 1rem;
-            font-weight: bold;
+    font-weight: bold;
             margin: 15px 0 8px 0;
             color: #93c5fd;
         }
@@ -177,7 +177,7 @@
             flex: 1;
         }
 
-        /* 保留上方 PC 快速登記小工具 */
+        /* 預設顯示 PC 快速登記小工具 */
         .pc-widget-panel {
             background: #18181b;
             border: 1px solid #27272a;
@@ -227,16 +227,27 @@
             font-weight: bold;
         }
 
+        /* 手機版響應式設計調整 */
         @media screen and (max-width: 768px) {
-            .pc-widget-panel { display: none !important; }
+            .pc-widget-panel { display: none !important; } /* 手機版隱藏上方小工具 */
             .manual-section { flex-direction: column; align-items: stretch; }
+            .boss-btn {
+                background-color: var(--accent-color) !important;
+                color: white !important;
+                border: none !important;
+                padding: 6px 12px !important;
+                font-weight: bold !important;
+                font-size: 0.95rem !important;
+                border-radius: 6px !important;
+                cursor: pointer !important;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.1</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.3</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -521,7 +532,7 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><strong>${name}</strong></td>
+                <td><button class="boss-btn" onclick="registerBoss('${name}')" title="點擊快速登記">${name}</button></td>
                 <td>${intervalMins}分</td>
                 <td>${respawnStr}</td>
                 <td class="${countdownClass}">${countdownStr}</td>
