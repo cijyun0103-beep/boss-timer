@@ -457,3 +457,121 @@
         }
 
         if (hours > 23 || minutes > 59 || seconds > 59) {
+            alert("輸入的時間不合法！");
+            return;
+        }
+
+        let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
+        
+        if (killDate.getTime() > now.getTime()) {
+            killDate.setDate(killDate.getDate() - 1);
+        }
+
+        const intervalMins = bossIntervals[bossName];
+        const killTimeMs = killDate.getTime();
+        const respawnTimeMs = killTimeMs + (intervalMins * 60000);
+
+        bossStates[bossName] = respawnTimeMs;
+        notifiedLocalOneMin[bossName] = false;
+        syncToServer();
+
+        document.getElementById('manual-time-input').value = '';
+    }
+
+    function resetAll() {
+        if (confirm("確定要重置所有王表紀錄嗎？")) {
+            fetch(`${API_BASE}/api/reset`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    bossStates = data.bossStates || {};
+                    notifiedLocalOneMin = {};
+                    renderTable();
+                });
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('boss-table-body');
+        tbody.innerHTML = '';
+        const now = new Date().getTime();
+
+        for (const [name, intervalMins] of Object.entries(bossIntervals)) {
+            let respawnTimeMs = bossStates[name];
+            let respawnStr = "尚未登記";
+            let countdownStr = "-";
+            let countdownClass = ""; 
+            const intervalMs = intervalMins * 60000;
+
+            if (respawnTimeMs) {
+                let overdueCount = 0;
+                if (now > respawnTimeMs) {
+                    const diffTime = now - respawnTimeMs;
+                    overdueCount = Math.floor(diffTime / intervalMs) + 1;
+                    respawnTimeMs += overdueCount * intervalMs;
+                }
+
+                const diff = respawnTimeMs - now;
+
+                if (diff > 0 && diff <= 60000) {
+                    countdownClass = "countdown-danger";
+                    if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
+                        notifiedLocalOneMin[name] = respawnTimeMs;
+                        speakText(`${name}將於一分鐘內重生`);
+                    }
+                }
+
+                const respawnDate = new Date(respawnTimeMs);
+                const hh = String(respawnDate.getHours()).padStart(2, '0');
+                const mm = String(respawnDate.getMinutes()).padStart(2, '0');
+                const ss = String(respawnDate.getSeconds()).padStart(2, '0');
+                
+                respawnStr = `${hh}:${mm}:${ss}`;
+                if (overdueCount > 0) {
+                    respawnStr += ` <span class="overdue-tag">(過${overdueCount})</span>`;
+                }
+
+                if (diff > 0) {
+                    const totalSec = Math.floor(diff / 1000);
+                    const h = Math.floor(totalSec / 3600);
+                    const m = Math.floor((totalSec % 3600) / 60);
+                    const s = totalSec % 60;
+                    countdownStr = `${h}時 ${m}分 ${s}秒`;
+                } else {
+                    countdownStr = "即將重生或已過期";
+                }
+            }
+
+            const tr = document.createElement('tr');
+            // 同時產生 PC 版行與手機版行，由 CSS 決定顯示哪一個
+            tr.innerHTML = `
+                <!-- PC 版：純文字名稱 -->
+                <td class="only-pc"><strong>${name}</strong></td>
+                <!-- 手機版：帶有按鈕的名稱 -->
+                <td class="only-mobile"><button class="mobile-boss-btn" onclick="registerBoss('${name}')">${name}</button></td>
+                <td>${intervalMins}分</td>
+                <td>${respawnStr}</td>
+                <td class="${countdownClass}">${countdownStr}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    document.getElementById('manual-time-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            registerManualBoss();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'k' || e.key === 'K') {
+            if (document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                registerManualBoss();
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
