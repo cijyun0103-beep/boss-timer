@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v6.9</title>
+    <title>天堂M 王表系統 v7.0</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,9 +177,27 @@
             flex: 1;
         }
 
-        /* 隱藏上方舊的快速登記工具區塊 */
+        /* 完整保留上方 PC 快速登記小工具 */
         .pc-widget-panel {
-            display: none !important;
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .pc-widget-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pc-widget-buttons button {
+            flex: 1;
+            min-width: 110px;
+            padding: 8px 10px;
+            font-size: 0.95rem;
         }
 
         .desktop-table {
@@ -226,6 +244,7 @@
         }
 
         @media screen and (max-width: 768px) {
+            .pc-widget-panel { display: none !important; } /* 手機版維持不顯示上方小工具，改用點擊表格名稱登記 */
             .manual-section { flex-direction: column; align-items: stretch; }
         }
     </style>
@@ -233,7 +252,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v6.9</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v7.0</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -244,6 +263,18 @@
             <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
         </div>
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
+    </div>
+
+    <!-- PC 快速登記小工具（完整恢復） -->
+    <div class="pc-widget-panel">
+        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
+        <div class="pc-widget-buttons">
+            <button onclick="registerBoss('死亡騎士')">死亡騎士</button>
+            <button onclick="registerBoss('將軍')">將軍</button>
+            <button onclick="registerBoss('古代巨人')">古代巨人</button>
+            <button onclick="registerBoss('不死鳥')">不死鳥</button>
+            <button onclick="registerBoss('克特')">克特</button>
+        </div>
     </div>
 
     <div class="section-title">📊 王表現況</div>
