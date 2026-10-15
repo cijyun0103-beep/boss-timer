@@ -201,7 +201,8 @@ setInterval(async () => {
         }
 
         const diff = displayRespawnTime - now;
-        if (diff <= 60000 && diff > 50000) {
+        // 放大判斷區間至 70 秒以內，確保定時器不會漏掉
+        if (diff <= 70000 && diff > 0) {
             if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
                 notifiedOneMin[name] = displayRespawnTime;
 
