@@ -37,19 +37,22 @@ function saveData() {
     }
 }
 
-// 直接填入你的 Discord Webhook 網址
+// 你的 Discord Webhook 網址
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK";
 
 async function sendDiscordWebhook(content, tts = false) {
     if (!DISCORD_WEBHOOK_URL) return;
     try {
-        await fetch(DISCORD_WEBHOOK_URL, {
+        const response = await fetch(DISCORD_WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content, tts })
         });
+        if (!response.ok) {
+            console.log("Webhook 發送失敗，狀態碼:", response.status);
+        }
     } catch (err) {
-        console.log("發送 Webhook 失敗:", err);
+        console.log("發送 Webhook 發生例外錯誤:", err);
     }
 }
 
@@ -63,6 +66,7 @@ app.get('/api/bosses', (req, res) => {
     res.json({ bossStates });
 });
 
+// 當網頁更新王的時間時，透過 Webhook 發送通知到 Discord
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         loadData();
@@ -77,6 +81,8 @@ app.post('/api/bosses', async (req, res) => {
 
                     const respDate = getTaiwanDate(newRespawnTime);
                     const timeStr = `${String(respDate.getUTCHours()).padStart(2, '0')}:${String(respDate.getUTCMinutes()).padStart(2, '0')}:${String(respDate.getUTCSeconds()).padStart(2, '0')}`;
+                    
+                    // 實際執行發送
                     await sendDiscordWebhook(`✅ 【**${bossName}**】設定成功，將於 **${timeStr}** 重生。`);
                 }
             }
@@ -95,7 +101,7 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 背景定時器：倒數 1 分鐘時發送通知與語音朗讀 (TTS)
+// 背景定時器：倒數 1 分鐘時發送提醒與 TTS 語音朗讀
 setInterval(async () => {
     const now = Date.now();
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
@@ -110,7 +116,9 @@ setInterval(async () => {
                 const respawnDate = getTaiwanDate(respawnTimeMs);
                 const timeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}`;
 
-                const noticeText = `注意！${name}將於一分鐘後的 ${timeStr} 重生！`;
+                const noticeText = `🚨 【**重要快訊**】 【**${name}**】將於 **1 分鐘內**（${timeStr}）重生！`;
+                
+                // 實際執行發送 (啟用 TTS 語音朗讀)
                 await sendDiscordWebhook(noticeText, true);
             }
         }
