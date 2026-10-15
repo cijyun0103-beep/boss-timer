@@ -12,15 +12,6 @@ app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// 各王的重生間隔時間（分鐘）
-const bossIntervals = {
-    "死亡騎士": 240,
-    "將軍": 360,
-    "古代巨人": 510,
-    "不死鳥": 480,
-    "克特": 600
-};
-
 let bossStates = {};
 let notifiedMap = {}; 
 
@@ -152,7 +143,9 @@ setInterval(async () => {
     }
 }, 3000);
 
-// 確保執行 Discord 登入
+// ==========================================
+// 關鍵：執行 Discord 機器人登入
+// ==========================================
 if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN)
         .then(() => console.log("Discord login executed successfully."))
