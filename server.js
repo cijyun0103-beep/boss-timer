@@ -38,15 +38,13 @@ function saveData() {
     }
 }
 
-// 取得環境變數
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
 
-// 【除錯檢查】印出前五個字元，確認 Render 有沒有抓到變數
 if (DISCORD_BOT_TOKEN) {
-    console.log("已讀取到 Token，前五個字元為:", DISCORD_BOT_TOKEN.substring(0, 5));
+    console.log("已成功取得 Token，前五碼：", DISCORD_BOT_TOKEN.substring(0, 5));
 } else {
-    console.log("【嚴重錯誤】process.env.DISCORD_BOT_TOKEN 是空的！");
+    console.log("【警告】未讀取到 DISCORD_BOT_TOKEN 環境變數！");
 }
 
 const client = new Client({
@@ -57,8 +55,8 @@ const client = new Client({
     ]
 });
 
-client.once('clientReady', () => {
-    console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
+client.once('ready', () => {
+    console.log(`[成功] Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
 function getTaiwanDate(timestamp) {
@@ -147,12 +145,12 @@ setInterval(async () => {
     }
 }, 3000);
 
-// 執行登入
-if (DISCORD_BOT_TOKEN) {
-    client.login(DISCORD_BOT_TOKEN)
-        .then(() => console.log("Discord login executed successfully."))
-        .catch(err => console.log("Discord 登入失敗，請檢查 Token:", err));
-}
+// 強制發起登入
+console.log("正在呼叫 Discord 登入...");
+client.login(DISCORD_BOT_TOKEN)
+    .catch(err => {
+        console.error("[失敗] Discord 登入攔截到錯誤：", err);
+    });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
