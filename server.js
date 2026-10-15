@@ -12,14 +12,24 @@ app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-let bossStates = {};
+// 預設防呆：如果重啟後沒資料，給予初始結構避免崩潰
+let bossStates = {
+    "死亡騎士": 0,
+    "將軍": 0,
+    "古代巨人": 0,
+    "不死鳥": 0,
+    "克特": 0
+};
 let notifiedOneMin = {};
 
 function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const rawData = fs.readFileSync(DATA_FILE, 'utf8');
-            bossStates = JSON.parse(rawData);
+            const saved = JSON.parse(rawData);
+            if (saved && Object.keys(saved).length > 0) {
+                bossStates = { ...bossStates, ...saved };
+            }
         }
     } catch (e) {
         console.log("讀取存檔失敗:", e);
@@ -145,7 +155,13 @@ app.post('/api/bosses', async (req, res) => {
 });
 
 app.post('/api/reset', (req, res) => {
-    bossStates = {};
+    bossStates = {
+        "死亡騎士": 0,
+        "將軍": 0,
+        "古代巨人": 0,
+        "不死鳥": 0,
+        "克特": 0
+    };
     notifiedOneMin = {};
     saveData();
     res.json({ success: true, bossStates });
@@ -163,7 +179,7 @@ setInterval(async () => {
 
     const now = Date.now();
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
-        if (!respawnTimeMs) continue;
+        if (!respawnTimeMs || respawnTimeMs === 0) continue;
         const intervalMs = bossIntervals[name] * 60000;
         let displayRespawnTime = respawnTimeMs;
 
