@@ -1,9 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'data.json');
