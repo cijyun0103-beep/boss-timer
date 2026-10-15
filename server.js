@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,42 +37,25 @@ function saveData() {
     }
 }
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
+// 直接填入你的 Discord Webhook 網址
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1558663969709883452/32kLWSD9jjvl-_ZTiUFfeosOoUE0lJJ5LRKeTVKXwP4Qyf-uqsWYlxzB5WnAlP3Z-fyK";
 
-if (DISCORD_BOT_TOKEN) {
-    console.log("已成功取得 Token，前五碼：", DISCORD_BOT_TOKEN.substring(0, 5));
-} else {
-    console.log("【警告】未讀取到 DISCORD_BOT_TOKEN 環境變數！");
+async function sendDiscordWebhook(content, tts = false) {
+    if (!DISCORD_WEBHOOK_URL) return;
+    try {
+        await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, tts })
+        });
+    } catch (err) {
+        console.log("發送 Webhook 失敗:", err);
+    }
 }
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-client.once('ready', () => {
-    console.log(`[成功] Discord 機器人已成功登入: ${client.user.tag}`);
-});
 
 function getTaiwanDate(timestamp) {
     const date = new Date(timestamp);
     return new Date(date.getTime() + (8 * 60 * 60 * 1000));
-}
-
-async function getTargetChannel() {
-    let channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-    if (!channel && client.isReady()) {
-        try {
-            channel = await client.channels.fetch(TARGET_CHANNEL_ID);
-        } catch (e) {
-            console.log("無法取得 Discord 頻道:", e);
-        }
-    }
-    return channel;
 }
 
 app.get('/api/bosses', (req, res) => {
@@ -85,7 +67,6 @@ app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         loadData();
         const incomingStates = req.body.states;
-        const channel = await getTargetChannel();
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
             if (newRespawnTime && newRespawnTime > 0) {
@@ -94,11 +75,9 @@ app.post('/api/bosses', async (req, res) => {
                     notifiedMap[bossName] = 0; 
                     saveData();
 
-                    if (channel) {
-                        const respDate = getTaiwanDate(newRespawnTime);
-                        const timeStr = `${String(respDate.getUTCHours()).padStart(2, '0')}:${String(respDate.getUTCMinutes()).padStart(2, '0')}:${String(respDate.getUTCSeconds()).padStart(2, '0')}`;
-                        await channel.send(`✅ 【**${bossName}**】設定成功，將於 **${timeStr}** 重生。`).catch(err => {});
-                    }
+                    const respDate = getTaiwanDate(newRespawnTime);
+                    const timeStr = `${String(respDate.getUTCHours()).padStart(2, '0')}:${String(respDate.getUTCMinutes()).padStart(2, '0')}:${String(respDate.getUTCSeconds()).padStart(2, '0')}`;
+                    await sendDiscordWebhook(`✅ 【**${bossName}**】設定成功，將於 **${timeStr}** 重生。`);
                 }
             }
         }
@@ -116,11 +95,8 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
+// 背景定時器：倒數 1 分鐘時發送通知與語音朗讀 (TTS)
 setInterval(async () => {
-    if (!client.isReady()) return;
-    const channel = await getTargetChannel();
-    if (!channel) return;
-
     const now = Date.now();
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
         if (!respawnTimeMs || respawnTimeMs <= 0) continue;
@@ -135,22 +111,11 @@ setInterval(async () => {
                 const timeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}`;
 
                 const noticeText = `注意！${name}將於一分鐘後的 ${timeStr} 重生！`;
-
-                await channel.send({
-                    content: noticeText,
-                    tts: true
-                }).catch(err => console.log("發送 TTS 失敗:", err));
+                await sendDiscordWebhook(noticeText, true);
             }
         }
     }
 }, 3000);
-
-// 強制發起登入
-console.log("正在呼叫 Discord 登入...");
-client.login(DISCORD_BOT_TOKEN)
-    .catch(err => {
-        console.error("[失敗] Discord 登入攔截到錯誤：", err);
-    });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
