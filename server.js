@@ -38,9 +38,16 @@ function saveData() {
     }
 }
 
-// 採用環境變數讀取（安全又不會被 GitHub 攔截）
+// 取得環境變數
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
+
+// 【除錯檢查】印出前五個字元，確認 Render 有沒有抓到變數
+if (DISCORD_BOT_TOKEN) {
+    console.log("已讀取到 Token，前五個字元為:", DISCORD_BOT_TOKEN.substring(0, 5));
+} else {
+    console.log("【嚴重錯誤】process.env.DISCORD_BOT_TOKEN 是空的！");
+}
 
 const client = new Client({
     intents: [
@@ -145,8 +152,6 @@ if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN)
         .then(() => console.log("Discord login executed successfully."))
         .catch(err => console.log("Discord 登入失敗，請檢查 Token:", err));
-} else {
-    console.log("錯誤：找不到 DISCORD_BOT_TOKEN 環境變數！");
 }
 
 app.listen(PORT, () => {
