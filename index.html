@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v8.0</title>
+    <title>天堂M 王表系統 v8.1</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -215,11 +215,9 @@
             background-color: #2a2a2a;
         }
 
-        /* 預設 PC 版顯示純文字名稱 */
         .only-pc { display: table-cell; }
         .only-mobile { display: none; }
 
-        /* 手機版按鈕樣式 */
         .mobile-boss-btn {
             background-color: var(--accent-color);
             color: white;
@@ -234,13 +232,11 @@
             background-color: var(--accent-hover);
         }
 
-        /* 倒數小於1分鐘的紅色樣式 */
         .countdown-danger {
             color: var(--warning-text);
             font-weight: bold;
         }
 
-        /* 僅用於過期標籤的紅色樣式 */
         .overdue-tag {
             color: var(--warning-text);
             font-weight: bold;
@@ -250,7 +246,6 @@
             .pc-widget-panel { display: none !important; }
             .manual-section { flex-direction: column; align-items: stretch; }
             
-            /* 手機版隱藏 PC 純文字，顯示按鈕 */
             .only-pc { display: none !important; }
             .only-mobile { display: table-cell !important; }
         }
@@ -259,7 +254,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.0</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.1</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -272,7 +267,7 @@
         <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具（完整保留） -->
+    <!-- PC 快速登記小工具 -->
     <div class="pc-widget-panel">
         <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
         <div class="pc-widget-buttons">
@@ -329,6 +324,16 @@
         const slider = document.getElementById('volume-slider');
         updateSliderAccent(slider);
         initSelect();
+        
+        // 優先讀取瀏覽器本地備份，確保重新開啟網頁絕不歸零
+        const localData = localStorage.getItem('bossStates_backup');
+        if (localData) {
+            try {
+                bossStates = JSON.parse(localData);
+                renderTable();
+            } catch(e) {}
+        }
+
         fetchServerData();
         setInterval(renderTable, 1000);
         setInterval(() => { fetchServerData(); }, 15000);
@@ -394,7 +399,9 @@
         }
     }
 
-    function syncToServer() {
+    function saveToLocalAndServer() {
+        localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
+        
         fetch(`${API_BASE}/api/bosses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -404,20 +411,27 @@
         .then(data => {
             if (data && data.bossStates) {
                 bossStates = data.bossStates;
+                localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
                 renderTable();
             }
         })
-        .catch(err => console.log("同步伺服器失敗:", err));
+        .catch(err => console.log("同步伺服器失敗，使用本地備份:", err));
     }
 
     function fetchServerData(showAlert = false) {
         fetch(`${API_BASE}/api/bosses`)
             .then(res => res.json())
             .then(data => {
-                if (data && data.bossStates) {
+                if (data && data.bossStates && Object.keys(data.bossStates).length > 0) {
                     bossStates = data.bossStates;
+                    localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
                     renderTable();
                     if (showAlert) alert("已成功同步伺服器資料！");
+                } else {
+                    // 如果伺服器被重置了，但本地有資料，自動將本地資料補回伺服器！
+                    if (Object.keys(bossStates).length > 0) {
+                        saveToLocalAndServer();
+                    }
                 }
             })
             .catch(err => {
@@ -433,7 +447,7 @@
         
         bossStates[bossName] = respawnTimeMs;
         notifiedLocalOneMin[bossName] = false;
-        syncToServer();
+        saveToLocalAndServer();
     }
 
     function registerManualBoss() {
@@ -474,13 +488,14 @@
 
         bossStates[bossName] = respawnTimeMs;
         notifiedLocalOneMin[bossName] = false;
-        syncToServer();
+        saveToLocalAndServer();
 
         document.getElementById('manual-time-input').value = '';
     }
 
     function resetAll() {
         if (confirm("確定要重置所有王表紀錄嗎？")) {
+            localStorage.removeItem('bossStates_backup');
             fetch(`${API_BASE}/api/reset`, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
