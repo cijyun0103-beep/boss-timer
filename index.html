@@ -1,198 +1,338 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統</title>
-    <style>
-        :root { --bg-dark: #121212; --container-bg: #1e1e1e; --primary: #3b82f6; --primary-hover: #2563eb; --success: #10b981; --success-hover: #059669; --danger: #ef4444; --danger-hover: #dc2626; --text: #e0e0e0; --border: #333; --row-alt: #252525; }
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg-dark); color: var(--text); margin: 0; padding: 10px; line-height: 1.5; }
-        .container { width: 100%; max-width: 800px; margin: 0 auto; background: var(--container-bg); padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
-        h2 { text-align: center; margin: 10px 0 20px; font-size: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
-        .sync-row { display: flex; justify-content: flex-end; margin-bottom: 15px; }
-        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 8px; background: #2a2a2a; }
-        table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-        th { background: #2a2a2a; color: #aaa; font-weight: 600; text-transform: uppercase; }
-        button { display: inline-flex; align-items: center; justify-content: center; background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; min-height: 44px; transition: background 0.2s; }
-        button:active { transform: scale(0.98); }
-        .btn-sync { background: var(--success); }
-        .btn-sync:hover { background: var(--success-hover); }
-        .btn-danger { background: var(--danger); width: 100%; margin-top: 20px; }
-        .manual-box { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: var(--row-alt); padding: 15px; border-radius: 10px; margin-top: 20px; }
-        .manual-box button { grid-column: span 2; }
-        select, input { background: #333; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 8px; width: 100%; }
-        .countdown-danger { color: #ff4d4d; font-weight: bold; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-        @media (min-width: 768px) {
-            .manual-box { grid-template-columns: 2fr 1.5fr auto; }
-            .manual-box button { grid-column: auto; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boss 重生計時器</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #10131a;
+      color: #f1f3f8;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .card {
+      margin: 16px 0;
+      padding: 18px;
+      background: #1b202b;
+      border: 1px solid #303847;
+      border-radius: 12px;
+    }
+
+    .boss-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) auto auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid #303847;
+    }
+
+    .boss-row:last-child {
+      border-bottom: 0;
+    }
+
+    .boss-name {
+      font-weight: bold;
+    }
+
+    .countdown {
+      color: #9fe3b0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .expired {
+      color: #ff9a9a;
+    }
+
+    input, button {
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid #414b5d;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    input {
+      width: 100%;
+      margin: 6px 0 12px;
+      background: #10131a;
+      color: #f1f3f8;
+    }
+
+    button {
+      cursor: pointer;
+      background: #536dfe;
+      border: 0;
+      color: white;
+    }
+
+    button:hover {
+      filter: brightness(1.12);
+    }
+
+    button.danger {
+      background: #b83b48;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    #status {
+      min-height: 1.5em;
+      color: #c5cbd6;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 16px;
+      }
+
+      .boss-row {
+        grid-template-columns: 1fr auto;
+      }
+
+      .boss-row .countdown {
+        grid-column: 1;
+      }
+
+      .boss-row button {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+      }
+    }
+  </style>
 </head>
 <body>
+  <main>
+    <h1>Boss 重生計時器</h1>
 
-<div class="container">
-    <h2>⚔️ 天堂M 王表系統</h2>
-    <div class="sync-row">
-        <button class="btn-sync" type="button" onclick="syncServer()">🔄 同步雲端資料</button>
-    </div>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>BOSS</th>
-                    <th>週期</th>
-                    <th>重生時間</th>
-                    <th>剩餘倒數</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="boss-tbody"></tbody>
-        </table>
-    </div>
-    <div class="manual-box">
-        <select id="boss-select"></select>
-        <input type="text" id="time-input" placeholder="死亡時間 (如 1430)" maxlength="4" inputmode="numeric">
-        <button type="button" onclick="registerManualBoss()">登記死亡</button>
-    </div>
-    <button class="btn-danger" type="button" onclick="resetAll()">⚠️ 重置所有資料</button>
-</div>
+    <section class="card">
+      <h2>設定 Boss 重生時間</h2>
 
-<script>
-    const API_BASE = 'https://boss-timer-9c6e.onrender.com';
-    const bossIntervals = {
-        "死亡騎士": 240,
-        "將軍": 360,
-        "古代巨人": 510,
-        "不死鳥": 480,
-        "克特": 600
-    };
-    let bossStates = {};
+      <label for="bossName">Boss 名稱</label>
+      <input id="bossName" type="text" placeholder="例如：紅龍" maxlength="60">
 
-    window.addEventListener('load', () => {
-        initSelect();
-        fetchServerData();
-        setInterval(renderTable, 1000);
-    });
+      <div class="form-grid">
+        <div>
+          <label for="hours">幾小時後重生</label>
+          <input id="hours" type="number" min="0" step="1" value="1">
+        </div>
+        <div>
+          <label for="minutes">額外分鐘</label>
+          <input id="minutes" type="number" min="0" max="59" step="1" value="0">
+        </div>
+      </div>
 
-    function initSelect() {
-        const select = document.getElementById('boss-select');
-        select.innerHTML = '';
-        for (const [name, intervalMins] of Object.entries(bossIntervals)) {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = `${name} (${intervalMins / 60} h)`;
-            select.appendChild(option);
+      <button id="setButton" type="button">設定時間</button>
+      <p id="status" role="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>目前計時</h2>
+      <div id="bossList">載入中……</div>
+      <p>
+        <button id="refreshButton" type="button">重新整理</button>
+        <button id="resetButton" class="danger" type="button">重置全部</button>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const bossList = document.getElementById('bossList');
+    const statusText = document.getElementById('status');
+
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`伺服器回應錯誤：HTTP ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      return contentType.includes('application/json')
+        ? response.json()
+        : null;
     }
 
-    async function fetchServerData(showMessage = false) {
-        try {
-            const response = await fetch(`${API_BASE}/api/bosses`);
-            const data = await response.json();
-            if (data.bossStates) {
-                bossStates = data.bossStates;
-                renderTable();
-                if (showMessage) alert('同步成功！');
+    function formatRemaining(milliseconds) {
+      if (milliseconds <= 0) return '已到重生時間';
+
+      const totalSeconds = Math.ceil(milliseconds / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      return `${hours} 小時 ${minutes} 分 ${seconds} 秒`;
+    }
+
+    async function loadBosses() {
+      try {
+        const bosses = await requestJson('/api/bosses');
+        renderBosses(bosses || {});
+      } catch (error) {
+        bossList.textContent = `載入失敗：${error.message}`;
+      }
+    }
+
+    function renderBosses(bosses) {
+      const entries = Object.entries(bosses).filter(([, value]) =>
+        value && value.respawnTime
+      );
+
+      if (entries.length === 0)        bossList.textContent = '目前沒有已設定的 Boss。';
+        return;
+      }
+
+      bossList.replaceChildren();
+
+      for (const [name, value] of entries) {
+        const row = document.createElement('div');
+        row.className = 'boss-row';
+
+        const bossName = document.createElement('div');
+        bossName.className = 'boss-name';
+        bossName.textContent = name;
+
+        const countdown = document.createElement('div');
+        countdown.className = 'countdown';
+        countdown.dataset.respawnTime = value.respawnTime;
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.textContent = '移除';
+        removeButton.addEventListener('click', () => removeBoss(name));
+
+        row.append(bossName, countdown, removeButton);
+        bossList.appendChild(row);
+      }
+
+      updateCountdowns();
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll('.countdown[data-respawn-time]').forEach(element => {
+        const timestamp = new Date(element.dataset.respawnTime).getTime();
+
+        if (!Number.isFinite(timestamp)) {
+          element.textContent = '時間格式錯誤';
+          element.classList.add('expired');
+          return;
+        }
+
+        const remaining = timestamp - Date.now();
+        element.textContent = formatRemaining(remaining);
+        element.classList.toggle('expired', remaining <= 0);
+      });
+    }
+
+    async function setBossTime() {
+      const name = document.getElementById('bossName').value.trim();
+      const hours = Number(document.getElementById('hours').value);
+      const minutes = Number(document.getElementById('minutes').value);
+
+      if (!name) {
+        statusText.textContent = '請輸入 Boss 名稱。';
+        return;
+      }
+
+      if (!Number.isInteger(hours) || hours < 0 ||
+          !Number.isInteger(minutes) || minutes < 0 || minutes > 59) {
+        statusText.textContent = '請輸入有效的小時與分鐘。';
+        return;
+      }
+
+      const duration = (hours * 60 + minutes) * 60 * 1000;
+      if (duration <= 0) {
+        statusText.textContent = '重生時間必須大於 0。';
+        return;
+      }
+
+      const respawnTime = new Date(Date.now() + duration).toISOString();
+
+      try {
+        await requestJson('/api/bosses', {
+          method: 'POST',
+          body: JSON.stringify({
+            [name]: {
+              respawnTime,
+              __notified_: false
             }
-        } catch (err) {
-            console.error('Fetch error:', err);
-            if (showMessage) alert('無法同步資料。');
-        }
+          })
+        });
+
+        statusText.textContent = `已設定「${name}」的重生時間。`;
+        document.getElementById('bossName').value = '';
+        await loadBosses();
+      } catch (error) {
+        statusText.textContent = `設定失敗：${error.message}`;
+      }
     }
 
-    async function saveAndSync(lastUpdatedBoss = null) {
-        try {
-            const res = await fetch(`${API_BASE}/api/bosses`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ states: bossStates, lastUpdatedBoss })
-            });
-            const data = await res.json();
-            if (data.success) {
-                fetchServerData();
-            }
-        } catch (err) {
-            alert('上傳失敗，請檢查網路。');
-        }
-    }
+    async function removeBoss(name) {
+      try {
+        const bosses = await requestJson('/api/bosses');
+        delete bosses[name];
 
-    function registerManualBoss() {
-        const name = document.getElementById('boss-select').value;
-        const timeVal = document.getElementById('time-input').value.trim();
-        if (!/^\d{4}$/.test(timeVal)) return alert('格式錯誤 (需為 4 位數字)');
-        const hrs = parseInt(timeVal.slice(0, 2));
-        const mins = parseInt(timeVal.slice(2, 4));
-        if (hrs > 23 || mins > 59) return alert('時間無效');
-        registerKill(name, timeVal);
-        document.getElementById('time-input').value = '';
-    }
+        await requestJson('/api/reset', { method: 'POST' });
 
-    function registerKill(bossName, customTime = null) {
-        const interval = bossIntervals[bossName];
-        const now = new Date();
-        const killDate = new Date(now);
-        if (customTime) {
-            killDate.setHours(parseInt(customTime.slice(0, 2)), parseInt(customTime.slice(2, 4)), 0, 0);
-            if (killDate > now) killDate.setDate(killDate.getDate() - 1);
+        if (Object.keys(bosses).length > 0) {
+          await requestJson('/api/bosses', {
+            method: 'POST',
+            body: JSON.stringify(bosses)
+          });
         }
 
-        bossStates[bossName] = killDate.getTime() + (interval * 60 * 1000);
-        renderTable();
-        saveAndSync(bossName);
+        statusText.textContent = `已移除「${name}」。`;
+        await loadBosses();
+      } catch (error) {
+        statusText.textContent = `移除失敗：${error.message}`;
+      }
     }
 
     async function resetAll() {
-        if (!confirm('確定清空？')) return;
-        const resp = await fetch(`${API_BASE}/api/reset`, { method: 'POST' });
-        if (resp.ok) {
-            bossStates = {};
-            renderTable();
-        }
+      if (!confirm('確定要重置所有 Boss 計時嗎？')) return;
+
+      try {
+        await requestJson('/api/reset', { method: 'POST' });
+        statusText.textContent = '所有 Boss 計時已重置。';
+        await loadBosses();
+      } catch (error) {
+        statusText.textContent = `重置失敗：${error.message}`;
+      }
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('boss-tbody');
-        const now = Date.now();
-        const list = Object.entries(bossIntervals).map(([name, mins]) => ({
-            name, intervalHours: mins / 60, respawnMs: Number(bossStates[name]) || 0
-        })).sort((a, b) => (a.respawnMs || 9e15) - (b.respawnMs || 9e15));
+    document.getElementById('setButton').addEventListener('click', setBossTime);
+    document.getElementById('refreshButton').addEventListener('click', loadBosses);
+    document.getElementById('resetButton').addEventListener('click', resetAll);
 
-        tbody.innerHTML = '';
-        list.forEach(item => {
-            let timeTxt = '---', countTxt = '未登記', cls = '';
-            if (item.respawnMs > 0) {
-                const d = new Date(item.respawnMs);
-                timeTxt = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-                const diff = item.respawnMs - now;
-                if (diff > 0) {
-                    const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
-                    countTxt = `${h} 時 ${m} 分 ${s} 秒`;
-                    if (diff <= 300000) cls = 'countdown-danger';
-                } else {
-                    countTxt = '現身中';
-                    cls = 'countdown-danger';
-                }
-            }
-            tbody.innerHTML += `<tr>
-                <td><strong>${item.name}</strong></td>
-                <td>${item.intervalHours} h</td>
-                <td>${timeTxt}</td>
-                <td class="${cls}">${countTxt}</td>
-                <td><button type="button" onclick="registerKill('${item.name}')">剛剛死亡</button></td>
-            </tr>`;
-        });
-    }
-
-    document.getElementById('time-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            registerManualBoss();
-        }
-    });
-</script>
-
+    loadBosses();
+    setInterval(updateCountdowns, 1000);
+    setInterval(loadBosses, 30000);
+  </script>
 </body>
 </html>
