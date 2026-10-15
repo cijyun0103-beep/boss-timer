@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天堂M 王表系統 v8.1</title>
+    <title>天堂M 王表系統 v8.2</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -177,7 +177,7 @@
             flex: 1;
         }
 
-        /* 完整保留 PC 快速登記小工具 */
+        /* 桌面版上方小工具 */
         .pc-widget-panel {
             background: #18181b;
             border: 1px solid #27272a;
@@ -254,7 +254,7 @@
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.1</span></h2>
+    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.2</span></h2>
 
     <div class="top-bar">
         <div class="settings-bar">
@@ -325,7 +325,6 @@
         updateSliderAccent(slider);
         initSelect();
         
-        // 優先讀取瀏覽器本地備份，確保重新開啟網頁絕不歸零
         const localData = localStorage.getItem('bossStates_backup');
         if (localData) {
             try {
@@ -428,7 +427,6 @@
                     renderTable();
                     if (showAlert) alert("已成功同步伺服器資料！");
                 } else {
-                    // 如果伺服器被重置了，但本地有資料，自動將本地資料補回伺服器！
                     if (Object.keys(bossStates).length > 0) {
                         saveToLocalAndServer();
                     }

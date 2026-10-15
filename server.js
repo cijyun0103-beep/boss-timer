@@ -3,6 +3,8 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+const googleTTS = require('google-tts-api');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,13 +17,11 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 let bossStates = {};
 let notifiedOneMin = {};
 
-// 啟動時讀取存檔
 function loadData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const rawData = fs.readFileSync(DATA_FILE, 'utf8');
             bossStates = JSON.parse(rawData);
-            console.log("已成功載入王表紀錄:", bossStates);
         }
     } catch (e) {
         console.log("讀取存檔失敗:", e);
@@ -29,11 +29,9 @@ function loadData() {
 }
 loadData();
 
-// 強制寫入檔案的存檔函式
 function saveData() {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(bossStates, null, 2));
-        console.log("已成功將王表紀錄寫入檔案:", bossStates);
     } catch (e) {
         console.log("寫入存檔失敗:", e);
     }
@@ -49,19 +47,57 @@ const bossIntervals = {
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
+const TARGET_VOICE_CHANNEL_ID = process.env.TARGET_VOICE_CHANNEL_ID || '';
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildVoiceStates
     ]
 });
 
-client.once('clientReady', () => {
+let audioPlayer = createAudioPlayer();
+let connection = null;
+
+client.once('clientReady', async () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
+    
+    if (TARGET_VOICE_CHANNEL_ID) {
+        try {
+            const channel = await client.channels.fetch(TARGET_VOICE_CHANNEL_ID);
+            if (channel && channel.isVoiceBased()) {
+                connection = joinVoiceChannel({
+                    channelId: channel.id,
+                    guildId: channel.guild.id,
+                    adapterCreator: channel.guild.voiceAdapterCreator,
+                });
+                console.log(`成功連線至 Discord 語音頻道: ${channel.name}`);
+            }
+        } catch (err) {
+            console.log("連線語音頻道失敗:", err);
+        }
+    }
 });
+
+async function playVoiceNotification(text) {
+    if (!connection) return;
+    try {
+        const url = googleTTS.getAudioUrl(text, {
+            lang: 'zh-TW',
+            slow: false,
+            host: 'https://translate.google.com',
+        });
+
+        const resource = createAudioResource(url);
+        audioPlayer.play(resource);
+        connection.subscribe(audioPlayer);
+    } catch (err) {
+        console.log("語音播報發生錯誤:", err);
+    }
+}
 
 function getTaiwanDate(timestamp = Date.now()) {
     const date = new Date(timestamp);
@@ -70,10 +106,8 @@ function getTaiwanDate(timestamp = Date.now()) {
 
 async function sendKillNotification(channel, bossName, killTimeMs, respawnTimeMs) {
     if (!channel) return;
-    
     const killDate = getTaiwanDate(killTimeMs);
     const killTimeStr = `${String(killDate.getUTCHours()).padStart(2, '0')}:${String(killDate.getUTCMinutes()).padStart(2, '0')}:${String(killDate.getUTCSeconds()).padStart(2, '0')}`;
-    
     const respawnDate = getTaiwanDate(respawnTimeMs);
     const respawnTimeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}:${String(respawnDate.getUTCSeconds()).padStart(2, '0')}`;
 
@@ -96,7 +130,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                     bossStates[bossName] = respawnTimeMs;
                     notifiedOneMin[bossName] = false;
-                    saveData(); // 立即存檔
+                    saveData();
 
                     await sendKillNotification(message.channel, bossName, killTimeMs, respawnTimeMs);
                 }
@@ -110,7 +144,7 @@ if (DISCORD_BOT_TOKEN) {
 }
 
 app.get('/api/bosses', (req, res) => {
-    loadData(); // 每次讀取前重新確認檔案內容
+    loadData();
     res.json({ bossStates });
 });
 
@@ -128,7 +162,7 @@ app.post('/api/bosses', async (req, res) => {
 
                 bossStates[bossName] = newRespawnTime;
                 notifiedOneMin[bossName] = false;
-                saveData(); // 立即存檔
+                saveData();
 
                 if (channel) {
                     await sendKillNotification(channel, bossName, killTimeMs, newRespawnTime);
@@ -145,7 +179,7 @@ app.post('/api/bosses', async (req, res) => {
 app.post('/api/reset', (req, res) => {
     bossStates = {};
     notifiedOneMin = {};
-    saveData(); // 寫入空檔（清空）
+    saveData();
     res.json({ success: true, bossStates });
 });
 
@@ -184,6 +218,8 @@ setInterval(async () => {
                 if (sentMsg) {
                     await sentMsg.react('💩');
                 }
+
+                await playVoiceNotification(`${name}將於一分鐘內重生`);
             }
         }
     }
