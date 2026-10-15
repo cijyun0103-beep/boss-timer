@@ -43,8 +43,7 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
 
 if (!DISCORD_BOT_TOKEN) {
-    console.error('致命錯誤：未設定 DISCORD_BOT_TOKEN 環境變數');
-    process.exit(1);
+    console.error('【警告】未設定 DISCORD_BOT_TOKEN 環境變數！');
 }
 
 const client = new Client({
@@ -59,9 +58,11 @@ client.once('ready', () => {
     console.log(`[成功] Discord 機器人已成功登入: ${client.user.tag}`);
 });
 
-client.login(DISCORD_BOT_TOKEN).catch(err => {
-    console.error("Discord 登入失敗：", err);
-});
+if (DISCORD_BOT_TOKEN) {
+    client.login(DISCORD_BOT_TOKEN).catch(err => {
+        console.error("Discord 登入失敗：", err);
+    });
+}
 
 function getTaiwanDate(timestamp) {
     return new Date(timestamp + 8 * 60 * 60 * 1000);
@@ -76,19 +77,26 @@ function formatTaiwanTime(timestamp, includeSeconds = false) {
 }
 
 async function sendDiscordMessage(content, tts = false) {
+    if (!client.isReady()) {
+        console.error('Discord Bot 尚未就緒，訊息未發送');
+        return;
+    }
+
     try {
         let channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-        if (!channel && client.isReady()) {
+        if (!channel) {
             channel = await client.channels.fetch(TARGET_CHANNEL_ID).catch(() => null);
         }
-        if (channel) {
-            await channel.send({ content, tts });
-            console.log("Discord 訊息發送成功");
-        } else {
-            console.log("找不到指定的 Discord 頻道");
+
+        if (!channel || !channel.isTextBased() || !channel.send) {
+            console.error('目標頻道不存在或不支援傳送訊息');
+            return;
         }
+
+        await channel.send({ content, tts });
+        console.log(`Discord 訊息發送成功 (TTS: ${tts})`);
     } catch (err) {
-        console.error("發送 Discord 訊息發生錯誤：", err);
+        console.error('發送 Discord 訊息發生錯誤：', err);
     }
 }
 
@@ -175,7 +183,7 @@ setInterval(async () => {
 
                 const timeStr = formatTaiwanTime(respawnTime, true);
                 const noticeText = `🚨 【**重要快訊**】 【**${name}**】將於 **1 分鐘內**（${timeStr}）重生！`;
-                await sendDiscordMessage(noticeText, true);
+                await sendDiscordMessage(noticeText, true); // 帶有 tts: true
             }
         }
     } catch (err) {
