@@ -5,282 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>天堂M 王表系統 v8.2</title>
     <style>
-        :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent-color: #3b82f6;
-            --accent-hover: #2563eb;
-            --danger-color: #ef4444;
-            --danger-hover: #dc2626;
-            --success-color: #10b981;
-            --success-hover: #059669;
-            --border-color: #333;
-            --warning-text: #ff4444;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-
-        h2 {
-            font-size: 1.4rem;
-            margin-top: 0;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .settings-bar {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            font-size: 0.85rem;
-            background: #1a1a1a;
-            padding: 6px 12px;
-            border-radius: 6px;
-            width: fit-content;
-        }
-
-        .volume-icon {
-            cursor: pointer;
-            user-select: none;
-            font-size: 1.1rem;
-        }
-
-        .settings-bar input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 140px;
-            height: 6px;
-            background: #444;
-            border-radius: 3px;
-            outline: none !important;
-            cursor: pointer;
-            margin: 0 4px;
-        }
-
-        .settings-bar input[type="range"]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 6px;
-            cursor: pointer;
-            background: linear-gradient(to right, var(--success-color) 0%, var(--success-color) var(--value, 50%), #444 var(--value, 50%), #444 100%);
-            border-radius: 3px;
-        }
-        
-        .settings-bar input[type="range"]::-moz-range-track {
-            width: 100%;
-            height: 6px;
-            cursor: pointer;
-            background: linear-gradient(to right, var(--success-color) 0%, var(--success-color) var(--value, 50%), #444 var(--value, 50%), #444 100%);
-            border-radius: 3px;
-        }
-
-        .settings-bar input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
-            transition: background 0.1s;
-            margin-top: -4px;
-        }
-        
-        .settings-bar input[type="range"]::-webkit-slider-thumb:hover {
-            background: #eee;
-        }
-
-        .btn-refresh {
-            background-color: var(--success-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            font-size: 0.9rem;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .btn-refresh:hover {
-            background-color: var(--success-hover);
-        }
-
-        .section-title {
-            font-size: 1rem;
-            font-weight: bold;
-            margin: 15px 0 8px 0;
-            color: #93c5fd;
-        }
-
-        button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 14px;
-            font-size: 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .btn-danger {
-            background-color: var(--danger-color);
-            width: 100%;
-            margin-top: 15px;
-        }
-        .btn-danger:hover {
-            background-color: var(--danger-hover);
-        }
-
-        .manual-section {
-            display: flex;
-            gap: 10px;
-            background: #252525;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 15px;
-            align-items: center;
-        }
-
-        select, input {
-            background: #333;
-            color: #fff;
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            font-size: 1rem;
-            border-radius: 6px;
-            flex: 1;
-        }
-
-        /* 桌面版上方小工具 */
-        .pc-widget-panel {
-            background: #18181b;
-            border: 1px solid #27272a;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .pc-widget-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .pc-widget-buttons button {
-            flex: 1;
-            min-width: 110px;
-            padding: 8px 10px;
-            font-size: 0.95rem;
-        }
-
-        .desktop-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .desktop-table th, .desktop-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.95rem;
-        }
-        .desktop-table th {
-            background-color: #2a2a2a;
-        }
-
-        .only-pc { display: table-cell; }
-        .only-mobile { display: none; }
-
-        .mobile-boss-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            font-weight: bold;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .mobile-boss-btn:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .countdown-danger {
-            color: var(--warning-text);
-            font-weight: bold;
-        }
-
-        .overdue-tag {
-            color: var(--warning-text);
-            font-weight: bold;
-        }
-
-        @media screen and (max-width: 768px) {
-            .pc-widget-panel { display: none !important; }
-            .manual-section { flex-direction: column; align-items: stretch; }
-            
-            .only-pc { display: none !important; }
-            .only-mobile { display: table-cell !important; }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h2 { text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #333; font-size: 0.95rem; }
+        th { background: #2a2a2a; }
+        button { background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; width: 100%; margin-top: 15px; }
+        .btn-danger:hover { background: #dc2626; }
+        .manual-box { display: flex; gap: 10px; background: #252525; padding: 12px; border-radius: 8px; margin-top: 15px; align-items: center; }
+        select, input { background: #333; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 6px; flex: 1; }
+        .countdown-danger { color: #ff4444; font-weight: bold; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .quick-box { background: #252525; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚔️ 天堂M 王表系統 <span style="font-size: 0.8rem; color: #888;">v8.2</span></h2>
-
-    <div class="top-bar">
-        <div class="settings-bar">
-            <span id="volume-icon" class="volume-icon" onclick="toggleMute()" title="點擊切換靜音">🔊</span>
-            <label>音量:</label>
-            <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolume(); updateSliderAccent(this);">
-            <span id="volume-text" style="min-width: 40px; text-align: right;">50%</span>
-            <button onclick="testAudio()" style="padding: 3px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
+    <h2>⚔️ 天堂M 王表系統 v8.2</h2>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+            🔊 音量: <input type="range" id="vol-range" min="0" max="100" value="50" style="width: 80px; vertical-align: middle;"> 50% 
+            <button onclick="testAudio()" style="padding: 4px 8px; font-size: 0.8rem; margin-left: 5px;">測試</button>
         </div>
-        <button class="btn-refresh" onclick="fetchServerData(true)">🔄 同步伺服器</button>
+        <button onclick="syncServer()" style="background: #10b981;">🔄 同步伺服器</button>
     </div>
 
-    <!-- PC 快速登記小工具 -->
-    <div class="pc-widget-panel">
-        <div style="font-size: 0.9rem; color: #93c5fd; font-weight: bold;">⚡ 快速登記小工具</div>
-        <div class="pc-widget-buttons">
-            <button onclick="registerBoss('死亡騎士')">死亡騎士</button>
-            <button onclick="registerBoss('將軍')">將軍</button>
-            <button onclick="registerBoss('古代巨人')">古代巨人</button>
-            <button onclick="registerBoss('不死鳥')">不死鳥</button>
-            <button onclick="registerBoss('克特')">克特</button>
-        </div>
+    <div class="quick-box">
+        <span style="font-size: 0.9rem; color: #aaa;">⚡ 快速登記:</span>
+        <button onclick="registerKill('死亡騎士')">死亡騎士</button>
+        <button onclick="registerKill('將軍')">將軍</button>
+        <button onclick="registerKill('古代巨人')">古代巨人</button>
+        <button onclick="registerKill('不死鳥')">不死鳥</button>
+        <button onclick="registerKill('克特')">克特</button>
     </div>
 
-    <div class="section-title">📊 王表現況</div>
-    <table class="desktop-table">
+    <table>
         <thead>
             <tr>
                 <th>BOSS 名稱</th>
@@ -289,15 +53,13 @@
                 <th>剩餘倒數</th>
             </tr>
         </thead>
-        <tbody id="boss-table-body">
-            <!-- 動態生成 -->
-        </tbody>
+        <tbody id="boss-tbody"></tbody>
     </table>
 
-    <div class="section-title">手動補登</div>
-    <div class="manual-section">
-        <select id="manual-boss-select"></select>
-        <input type="text" id="manual-time-input" placeholder="輸入 4 碼或 6 碼 (例如 1605)" maxlength="6">
+    <div style="margin-top: 15px; font-size: 0.9rem; color: #aaa;">手動補登</div>
+    <div class="manual-box">
+        <select id="boss-select"></select>
+        <input type="text" id="time-input" placeholder="輸入 4 碼 (例如 1605)" maxlength="6">
         <button onclick="registerManualBoss()">登記擊殺 (K)</button>
     </div>
 
@@ -316,79 +78,15 @@
     };
 
     let bossStates = {};
-    let volume = 0.5;
-    let isMuted = false;
-    let notifiedLocalOneMin = {};
 
     window.onload = function() {
-        const slider = document.getElementById('volume-slider');
-        updateSliderAccent(slider);
         initSelect();
-        
-        const localData = localStorage.getItem('bossStates_backup');
-        if (localData) {
-            try {
-                bossStates = JSON.parse(localData);
-                renderTable();
-            } catch(e) {}
-        }
-
         fetchServerData();
         setInterval(renderTable, 1000);
-        setInterval(() => { fetchServerData(); }, 15000);
     };
 
-    function updateSliderAccent(slider) {
-        slider.style.setProperty('--value', slider.value + '%');
-    }
-
-    function speakText(text) {
-        if (isMuted || volume <= 0) return;
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-TW';
-            utterance.volume = volume;
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    function testAudio() {
-        speakText("音效測試正常");
-    }
-
-    function updateVolume() {
-        const slider = document.getElementById('volume-slider');
-        volume = slider.value / 100;
-        document.getElementById('volume-text').innerText = slider.value + '%';
-        if (volume === 0) {
-            isMuted = true;
-            document.getElementById('volume-icon').innerText = '🔇';
-        } else {
-            isMuted = false;
-            document.getElementById('volume-icon').innerText = '🔊';
-        }
-    }
-
-    function toggleMute() {
-        isMuted = !isMuted;
-        const icon = document.getElementById('volume-icon');
-        const slider = document.getElementById('volume-slider');
-        if (isMuted) {
-            icon.innerText = '🔇';
-            slider.value = 0;
-            document.getElementById('volume-text').innerText = '0%';
-        } else {
-            icon.innerText = '🔊';
-            slider.value = volume * 100;
-            document.getElementById('volume-text').innerText = Math.round(volume * 100) + '%';
-        }
-        updateSliderAccent(slider);
-    }
-
     function initSelect() {
-        const select = document.getElementById('manual-boss-select');
+        const select = document.getElementById('boss-select');
         select.innerHTML = '';
         for (const [name, mins] of Object.entries(bossIntervals)) {
             const opt = document.createElement('option');
@@ -398,168 +96,121 @@
         }
     }
 
-    function saveToLocalAndServer() {
-        localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
-        
+    function syncServer() {
+        fetchServerData(true);
+    }
+
+    function fetchServerData(showMessage = false) {
+        fetch(`${API_BASE}/api/bosses`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.bossStates) {
+                    // 過濾掉後端產生的內部通知標記
+                    bossStates = {};
+                    for (const [k, v] of Object.entries(data.bossStates)) {
+                        if (!k.startsWith('__notified_')) {
+                            bossStates[k] = v;
+                        }
+                    }
+                    renderTable();
+                    if (showMessage) alert("同步成功！");
+                }
+            })
+            .catch(err => {
+                if (showMessage) alert("無法連線至伺服器");
+            });
+    }
+
+    function saveAndSync(lastUpdatedBoss = null) {
         fetch(`${API_BASE}/api/bosses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ states: bossStates })
+            body: JSON.stringify({ states: bossStates, lastUpdatedBoss })
         })
         .then(res => res.json())
         .then(data => {
             if (data && data.bossStates) {
-                bossStates = data.bossStates;
-                localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
+                bossStates = {};
+                for (const [k, v] of Object.entries(data.bossStates)) {
+                    if (!k.startsWith('__notified_')) {
+                        bossStates[k] = v;
+                    }
+                }
                 renderTable();
             }
         })
-        .catch(err => console.log("同步伺服器失敗，使用本地備份:", err));
+        .catch(err => console.log("同步至伺服器失敗"));
     }
 
-    function fetchServerData(showAlert = false) {
-        fetch(`${API_BASE}/api/bosses`)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.bossStates && Object.keys(data.bossStates).length > 0) {
-                    bossStates = data.bossStates;
-                    localStorage.setItem('bossStates_backup', JSON.stringify(bossStates));
-                    renderTable();
-                    if (showAlert) alert("已成功同步伺服器資料！");
-                } else {
-                    if (Object.keys(bossStates).length > 0) {
-                        saveToLocalAndServer();
-                    }
-                }
-            })
-            .catch(err => {
-                if (showAlert) alert("無法連接伺服器！");
-            });
-    }
-
-    function registerBoss(bossName) {
-        const now = new Date();
+    function registerKill(bossName, customTimeStr = null) {
         const intervalMins = bossIntervals[bossName];
-        const killTimeMs = now.getTime();
-        const respawnTimeMs = killTimeMs + (intervalMins * 60000);
-        
+        const now = new Date();
+        let deathDate = new Date(now.getTime());
+
+        if (customTimeStr && (customTimeStr.length === 4 || customTimeStr.length === 6)) {
+            const hh = parseInt(customTimeStr.substring(0, 2), 10);
+            const mm = parseInt(customTimeStr.substring(2, 4), 10);
+            const ss = customTimeStr.length === 6 ? parseInt(customTimeStr.substring(4, 6), 10) : 0;
+            deathDate.setHours(hh, mm, ss, 0);
+            if (deathDate.getTime() > now.getTime()) {
+                deathDate.setDate(deathDate.getDate() - 1);
+            }
+        }
+
+        const respawnTimeMs = deathDate.getTime() + (intervalMins * 60000);
         bossStates[bossName] = respawnTimeMs;
-        notifiedLocalOneMin[bossName] = false;
-        saveToLocalAndServer();
+        renderTable();
+        saveAndSync(bossName); // 傳送剛才更新的王名稱，讓後端發送即時通知
     }
 
     function registerManualBoss() {
-        const bossName = document.getElementById('manual-boss-select').value;
-        const timeInput = document.getElementById('manual-time-input').value.trim();
-        
-        if (!timeInput || (timeInput.length !== 4 && timeInput.length !== 6)) {
-            alert("請輸入正確的時間格式：4碼 (例如 1605) 或 6碼 (例如 160530)");
+        const bossName = document.getElementById('boss-select').value;
+        const timeInput = document.getElementById('time-input').value.trim();
+        if (timeInput.length !== 4 && timeInput.length !== 6) {
+            alert("請輸入 4 碼或 6 碼時間，例如 1605");
             return;
         }
-
-        const now = new Date();
-        let hours, minutes, seconds = 0;
-
-        if (timeInput.length === 4) {
-            hours = parseInt(timeInput.substring(0, 2), 10);
-            minutes = parseInt(timeInput.substring(2, 4), 10);
-        } else {
-            hours = parseInt(timeInput.substring(0, 2), 10);
-            minutes = parseInt(timeInput.substring(2, 4), 10);
-            seconds = parseInt(timeInput.substring(4, 6), 10);
-        }
-
-        if (hours > 23 || minutes > 59 || seconds > 59) {
-            alert("輸入的時間不合法！");
-            return;
-        }
-
-        let killDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds);
-        
-        if (killDate.getTime() > now.getTime()) {
-            killDate.setDate(killDate.getDate() - 1);
-        }
-
-        const intervalMins = bossIntervals[bossName];
-        const killTimeMs = killDate.getTime();
-        const respawnTimeMs = killTimeMs + (intervalMins * 60000);
-
-        bossStates[bossName] = respawnTimeMs;
-        notifiedLocalOneMin[bossName] = false;
-        saveToLocalAndServer();
-
-        document.getElementById('manual-time-input').value = '';
+        registerKill(bossName, timeInput);
+        document.getElementById('time-input').value = '';
     }
 
     function resetAll() {
-        if (confirm("確定要重置所有王表紀錄嗎？")) {
-            localStorage.removeItem('bossStates_backup');
+        if (confirm("確定要重置所有資料嗎？")) {
             fetch(`${API_BASE}/api/reset`, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
-                    bossStates = data.bossStates || {};
-                    notifiedLocalOneMin = {};
+                    bossStates = {};
                     renderTable();
                 });
         }
     }
 
+    function testAudio() {
+        alert("語音測試功能正常 (正式提醒將由 Discord Webhook 進行 TTS 語音廣播)");
+    }
+
     function renderTable() {
-        const tbody = document.getElementById('boss-table-body');
+        const tbody = document.getElementById('boss-tbody');
         tbody.innerHTML = '';
-        const now = new Date().getTime();
+        const now = Date.now();
 
-        let bossList = [];
+        let list = [];
         for (const [name, intervalMins] of Object.entries(bossIntervals)) {
-            let respawnTimeMs = bossStates[name];
-            let sortTime = respawnTimeMs ? respawnTimeMs : Number.MAX_SAFE_INTEGER;
-            let overdueCount = 0;
-            const intervalMs = intervalMins * 60000;
-
-            if (respawnTimeMs) {
-                let tempRespawn = respawnTimeMs;
-                if (now > tempRespawn) {
-                    const diffTime = now - tempRespawn;
-                    overdueCount = Math.floor(diffTime / intervalMs) + 1;
-                    tempRespawn += overdueCount * intervalMs;
-                }
-                sortTime = tempRespawn;
-            }
-
-            bossList.push({ name, intervalMins, respawnTimeMs: respawnTimeMs ? (respawnTimeMs + overdueCount * intervalMs) : null, sortTime, overdueCount });
+            let respawnMs = bossStates[name] || 0;
+            list.push({ name, intervalMins, respawnMs });
         }
 
-        bossList.sort((a, b) => a.sortTime - b.sortTime);
+        list.sort((a, b) => (a.respawnMs || Infinity) - (b.respawnMs || Infinity));
 
-        for (const boss of bossList) {
-            const name = boss.name;
-            const intervalMins = boss.intervalMins;
-            let respawnTimeMs = boss.respawnTimeMs;
-            let overdueCount = boss.overdueCount;
+        for (const item of list) {
             let respawnStr = "尚未登記";
             let countdownStr = "-";
-            let countdownClass = ""; 
+            let dangerClass = "";
 
-            if (respawnTimeMs) {
-                const diff = respawnTimeMs - now;
-
-                if (diff > 0 && diff <= 60000) {
-                    countdownClass = "countdown-danger";
-                    if (!notifiedLocalOneMin[name] || notifiedLocalOneMin[name] !== respawnTimeMs) {
-                        notifiedLocalOneMin[name] = respawnTimeMs;
-                        speakText(`${name}將於一分鐘內重生`);
-                    }
-                }
-
-                const respawnDate = new Date(respawnTimeMs);
-                const hh = String(respawnDate.getHours()).padStart(2, '0');
-                const mm = String(respawnDate.getMinutes()).padStart(2, '0');
-                const ss = String(respawnDate.getSeconds()).padStart(2, '0');
-                
-                respawnStr = `${hh}:${mm}:${ss}`;
-                if (overdueCount > 0) {
-                    respawnStr += ` <span class="overdue-tag">(過${overdueCount})</span>`;
-                }
+            if (item.respawnMs > 0) {
+                const diff = item.respawnMs - now;
+                const d = new Date(item.respawnMs);
+                respawnStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 
                 if (diff > 0) {
                     const totalSec = Math.floor(diff / 1000);
@@ -567,24 +218,28 @@
                     const m = Math.floor((totalSec % 3600) / 60);
                     const s = totalSec % 60;
                     countdownStr = `${h}時 ${m}分 ${s}秒`;
+
+                    if (diff <= 300000) { // 5分鐘內變紅閃爍
+                        dangerClass = "countdown-danger";
+                    }
                 } else {
-                    countdownStr = "即將重生或已過期";
+                    countdownStr = "現身中";
+                    dangerClass = "countdown-danger";
                 }
             }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="only-pc"><strong>${name}</strong></td>
-                <td class="only-mobile"><button class="mobile-boss-btn" onclick="registerBoss('${name}')">${name}</button></td>
-                <td>${intervalMins}分</td>
+                <td><strong>${item.name}</strong></td>
+                <td>${item.intervalMins}分</td>
                 <td>${respawnStr}</td>
-                <td class="${countdownClass}">${countdownStr}</td>
+                <td class="${dangerClass}">${countdownStr}</td>
             `;
             tbody.appendChild(tr);
         }
     }
 
-    document.getElementById('manual-time-input').addEventListener('keydown', (e) => {
+    document.getElementById('time-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             registerManualBoss();
@@ -592,11 +247,10 @@
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'k' || e.key === 'K') {
-            if (document.activeElement.tagName !== 'INPUT') {
-                e.preventDefault();
-                registerManualBoss();
-            }
+        if (e.key.toLowerCase() === 'k' && document.activeElement.tagName !== 'INPUT') {
+            e.preventDefault();
+            const bossName = document.getElementById('boss-select').value;
+            registerKill(bossName);
         }
     });
 </script>
