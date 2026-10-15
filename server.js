@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +38,7 @@ function saveData() {
     }
 }
 
+// 採用環境變數讀取（安全又不會被 GitHub 攔截）
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
 
@@ -70,13 +71,11 @@ async function getTargetChannel() {
     return channel;
 }
 
-// API: 取得目前所有王的狀態
 app.get('/api/bosses', (req, res) => {
     loadData();
     res.json({ bossStates });
 });
 
-// API: 接收前端更新的重生時間
 app.post('/api/bosses', async (req, res) => {
     if (req.body && req.body.states) {
         loadData();
@@ -105,7 +104,6 @@ app.post('/api/bosses', async (req, res) => {
     }
 });
 
-// API: 重置所有資料
 app.post('/api/reset', (req, res) => {
     bossStates = {};
     notifiedMap = {};
@@ -113,7 +111,6 @@ app.post('/api/reset', (req, res) => {
     res.json({ success: true, bossStates });
 });
 
-// 核心背景定時器：每 3 秒檢查一次，抓準提前 1 分鐘時發送 TTS 語音朗讀通知
 setInterval(async () => {
     if (!client.isReady()) return;
     const channel = await getTargetChannel();
@@ -143,9 +140,7 @@ setInterval(async () => {
     }
 }, 3000);
 
-// ==========================================
-// 關鍵：執行 Discord 機器人登入
-// ==========================================
+// 執行登入
 if (DISCORD_BOT_TOKEN) {
     client.login(DISCORD_BOT_TOKEN)
         .then(() => console.log("Discord login executed successfully."))
