@@ -42,22 +42,35 @@ function sendDiscordWebhook(message) {
 
     const options = {
         hostname: url.hostname,
-        path: url.pathname,
+        path: url.pathname + url.search,
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(data),
-            'User-Agent': 'Mozilla/5.0 (NodeJS)' // 必須加入，避免被阻擋
+            'User-Agent': 'Mozilla/5.0 (NodeJS)'
         }
     };
 
     const req = https.request(options, (res) => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-            console.error(`Webhook error: ${res.statusCode}`);
-        }
+        let body = '';
+
+        res.on('data', chunk => {
+            body += chunk;
+        });
+
+        res.on('end', () => {
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+                console.error(
+                    `Webhook error: ${res.statusCode}; response: ${body}`
+                );
+            }
+        });
     });
 
-    req.on('error', (e) => console.error('Webhook request error:', e));
+    req.on('error', (err) => {
+        console.error('Webhook request error:', err);
+    });
+
     req.write(data);
     req.end();
 }
@@ -77,7 +90,6 @@ app.post('/api/bosses', (req, res) => {
     });
 
     saveData(currentData);
-    sendDiscordWebhook(`系統更新：已設定/更新 Boss 時間。`);
     res.sendStatus(200);
 });
 
@@ -112,5 +124,4 @@ setInterval(() => {
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    sendDiscordWebhook('測試訊息：伺服器已啟動。');
 });
