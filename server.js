@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +11,13 @@ app.use(cors());
 app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'data.json');
+
+// 必須從 Render 環境變數讀取 Webhook
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+if (!DISCORD_WEBHOOK_URL) {
+    console.error('致命錯誤：未設定 DISCORD_WEBHOOK_URL 環境變數');
+    process.exit(1);
+}
 
 let bossStates = {};
 
@@ -38,30 +45,39 @@ function saveData() {
     }
 }
 
-// 讀取 Render 環境變數裡的 Bot Token 與 頻道 ID
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
+function sendDiscordWebhook(content, tts = false) {
+    if (!DISCORD_WEBHOOK_URL) return;
+    const data = JSON.stringify({ content, tts });
+    const urlObj = new URL(DISCORD_WEBHOOK_URL);
 
-if (!DISCORD_BOT_TOKEN) {
-    console.error('【警告】未設定 DISCORD_BOT_TOKEN 環境變數！');
-}
+    const options = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data)
+        }
+    };
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
-
-client.once('ready', () => {
-    console.log(`[成功] Discord 機器人已成功登入: ${client.user.tag}`);
-});
-
-if (DISCORD_BOT_TOKEN) {
-    client.login(DISCORD_BOT_TOKEN).catch(err => {
-        console.error("Discord 登入失敗：", err);
+    const req = https.request(options, (res) => {
+        let responseBody = '';
+        res.on('data', (chunk) => { responseBody += chunk; });
+        res.on('end', () => {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+                console.log("Webhook 發送成功！");
+            } else {
+                console.error(`Webhook 發送失敗，狀態碼: ${res.statusCode}, 回應: ${responseBody}`);
+            }
+        });
     });
+
+    req.on('error', (err) => {
+        console.error('發送 Webhook 發生錯誤:', err);
+    });
+
+    req.write(data);
+    req.end();
 }
 
 function getTaiwanDate(timestamp) {
@@ -74,30 +90,6 @@ function formatTaiwanTime(timestamp, includeSeconds = false) {
     const mm = String(date.getUTCMinutes()).padStart(2, '0');
     const ss = String(date.getUTCSeconds()).padStart(2, '0');
     return includeSeconds ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
-}
-
-async function sendDiscordMessage(content, tts = false) {
-    if (!client.isReady()) {
-        console.error('Discord Bot 尚未就緒，訊息未發送');
-        return;
-    }
-
-    try {
-        let channel = client.channels.cache.get(TARGET_CHANNEL_ID);
-        if (!channel) {
-            channel = await client.channels.fetch(TARGET_CHANNEL_ID).catch(() => null);
-        }
-
-        if (!channel || !channel.isTextBased() || !channel.send) {
-            console.error('目標頻道不存在或不支援傳送訊息');
-            return;
-        }
-
-        await channel.send({ content, tts });
-        console.log(`Discord 訊息發送成功 (TTS: ${tts})`);
-    } catch (err) {
-        console.error('發送 Discord 訊息發生錯誤：', err);
-    }
 }
 
 app.get('/api/bosses', (req, res) => {
@@ -149,21 +141,20 @@ app.post('/api/bosses', async (req, res) => {
 
     if (updatedBossName && updatedRespawnTime) {
         const timeStr = formatTaiwanTime(updatedRespawnTime, true);
-        await sendDiscordMessage(`✅ 【**${updatedBossName}**】設定成功，將於 **${timeStr}** 重生。`);
+        sendDiscordWebhook(`✅ 【**${updatedBossName}**】設定成功，將於 **${timeStr}** 重生。`);
     }
 });
 
-app.post('/api/reset', async (req, res) => {
+app.post('/api/reset', (req, res) => {
     bossStates = {};
     saveData();
-    await sendDiscordMessage("⚠️ **【系統通知】** 所有王的重生時間已被重置。");
+    sendDiscordWebhook("⚠️ **【系統通知】** 所有王的重生時間已被重置。");
     res.json({ success: true, bossStates: {} });
 });
 
-// 背景定時器：倒數 1 分鐘時發送提醒與 TTS 語音朗讀
 let checkingRespawns = false;
-setInterval(async () => {
-    if (checkingRespawns || !client.isReady()) return;
+setInterval(() => {
+    if (checkingRespawns) return;
     checkingRespawns = true;
 
     try {
@@ -183,7 +174,7 @@ setInterval(async () => {
 
                 const timeStr = formatTaiwanTime(respawnTime, true);
                 const noticeText = `🚨 【**重要快訊**】 【**${name}**】將於 **1 分鐘內**（${timeStr}）重生！`;
-                await sendDiscordMessage(noticeText, true); // 帶有 tts: true
+                sendDiscordWebhook(noticeText, true);
             }
         }
     } catch (err) {
@@ -195,4 +186,5 @@ setInterval(async () => {
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    sendDiscordWebhook("測試訊息：伺服器已成功啟動！");
 });
