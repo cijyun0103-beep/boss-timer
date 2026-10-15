@@ -3,8 +3,6 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-const googleTTS = require('google-tts-api');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,57 +45,19 @@ const bossIntervals = {
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = process.env.TARGET_CHANNEL_ID || '1556240665027936377';
-const TARGET_VOICE_CHANNEL_ID = process.env.TARGET_VOICE_CHANNEL_ID || '';
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildMessageReactions
     ]
 });
 
-let audioPlayer = createAudioPlayer();
-let connection = null;
-
-client.once('clientReady', async () => {
+client.once('clientReady', () => {
     console.log(`Discord 機器人已成功登入: ${client.user.tag}`);
-    
-    if (TARGET_VOICE_CHANNEL_ID) {
-        try {
-            const channel = await client.channels.fetch(TARGET_VOICE_CHANNEL_ID);
-            if (channel && channel.isVoiceBased()) {
-                connection = joinVoiceChannel({
-                    channelId: channel.id,
-                    guildId: channel.guild.id,
-                    adapterCreator: channel.guild.voiceAdapterCreator,
-                });
-                console.log(`成功連線至 Discord 語音頻道: ${channel.name}`);
-            }
-        } catch (err) {
-            console.log("連線語音頻道失敗:", err);
-        }
-    }
 });
-
-async function playVoiceNotification(text) {
-    if (!connection) return;
-    try {
-        const url = googleTTS.getAudioUrl(text, {
-            lang: 'zh-TW',
-            slow: false,
-            host: 'https://translate.google.com',
-        });
-
-        const resource = createAudioResource(url);
-        audioPlayer.play(resource);
-        connection.subscribe(audioPlayer);
-    } catch (err) {
-        console.log("語音播報發生錯誤:", err);
-    }
-}
 
 function getTaiwanDate(timestamp = Date.now()) {
     const date = new Date(timestamp);
@@ -231,8 +191,6 @@ setInterval(async () => {
                 if (sentMsg) {
                     await sentMsg.react('💩');
                 }
-
-                await playVoiceNotification(`${name}將於一分鐘內重生`);
             }
         }
     }
