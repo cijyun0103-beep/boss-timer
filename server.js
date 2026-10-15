@@ -12,15 +12,8 @@ app.use(express.json());
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// 預設防呆：如果重啟後沒資料，給予初始結構避免崩潰
-let bossStates = {
-    "死亡騎士": 0,
-    "將軍": 0,
-    "古代巨人": 0,
-    "不死鳥": 0,
-    "克特": 0
-};
-let notifiedOneMin = {};
+let bossStates = {};
+let notifiedOneMin = {}; // 記錄已發送過通知的時間戳記
 
 function loadData() {
     try {
@@ -28,7 +21,7 @@ function loadData() {
             const rawData = fs.readFileSync(DATA_FILE, 'utf8');
             const saved = JSON.parse(rawData);
             if (saved && Object.keys(saved).length > 0) {
-                bossStates = { ...bossStates, ...saved };
+                bossStates = saved;
             }
         }
     } catch (e) {
@@ -99,7 +92,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     const respawnTimeMs = killTimeMs + intervalMs;
 
                     bossStates[bossName] = respawnTimeMs;
-                    notifiedOneMin[bossName] = false;
+                    notifiedOneMin[bossName] = 0; // 重置該王的通知鎖
                     saveData();
 
                     await sendKillNotification(message.channel, bossName, killTimeMs, respawnTimeMs);
@@ -128,9 +121,7 @@ app.post('/api/bosses', async (req, res) => {
         if (!channel && client.isReady()) {
             try {
                 channel = await client.channels.fetch(TARGET_CHANNEL_ID);
-            } catch (e) {
-                console.log("無法取得 Discord 頻道:", e);
-            }
+            } catch (e) {}
         }
 
         for (const [bossName, newRespawnTime] of Object.entries(incomingStates)) {
@@ -139,7 +130,7 @@ app.post('/api/bosses', async (req, res) => {
                 const killTimeMs = newRespawnTime - intervalMs;
 
                 bossStates[bossName] = newRespawnTime;
-                notifiedOneMin[bossName] = false;
+                notifiedOneMin[bossName] = 0; // 重置通知鎖
                 saveData();
 
                 if (channel) {
@@ -155,18 +146,13 @@ app.post('/api/bosses', async (req, res) => {
 });
 
 app.post('/api/reset', (req, res) => {
-    bossStates = {
-        "死亡騎士": 0,
-        "將軍": 0,
-        "古代巨人": 0,
-        "不死鳥": 0,
-        "克特": 0
-    };
+    bossStates = {};
     notifiedOneMin = {};
     saveData();
     res.json({ success: true, bossStates });
 });
 
+// 背景計時器：每 3 秒檢查一次
 setInterval(async () => {
     if (!client.isReady()) return;
     let channel = client.channels.cache.get(TARGET_CHANNEL_ID);
@@ -179,22 +165,23 @@ setInterval(async () => {
 
     const now = Date.now();
     for (const [name, respawnTimeMs] of Object.entries(bossStates)) {
-        if (!respawnTimeMs || respawnTimeMs === 0) continue;
+        if (!respawnTimeMs) continue;
         const intervalMs = bossIntervals[name] * 60000;
-        let displayRespawnTime = respawnTimeMs;
+        let targetRespawn = respawnTimeMs;
 
-        if (now > displayRespawnTime) {
-            const diffTime = now - displayRespawnTime;
-            const overdueCount = Math.floor(diffTime / intervalMs) + 1;
-            displayRespawnTime += overdueCount * intervalMs;
+        // 如果時間已經過期，自動推進到接下來的有效重生時間點
+        while (now > targetRespawn) {
+            targetRespawn += intervalMs;
         }
 
-        const diff = displayRespawnTime - now;
-        if (diff <= 70000 && diff > 0) {
-            if (!notifiedOneMin[name] || notifiedOneMin[name] !== displayRespawnTime) {
-                notifiedOneMin[name] = displayRespawnTime;
+        const diff = targetRespawn - now;
 
-                const respawnDate = getTaiwanDate(displayRespawnTime);
+        // 當倒數落在 0 到 65 秒之間 (65000 毫秒)，且這個目標時間還沒發送過通知
+        if (diff <= 65000 && diff > 0) {
+            if (notifiedOneMin[name] !== targetRespawn) {
+                notifiedOneMin[name] = targetRespawn; // 鎖定這個時間點，避免重複發送
+
+                const respawnDate = getTaiwanDate(targetRespawn);
                 const timeStr = `${String(respawnDate.getUTCHours()).padStart(2, '0')}:${String(respawnDate.getUTCMinutes()).padStart(2, '0')}:${String(respawnDate.getUTCSeconds()).padStart(2, '0')}`;
 
                 const embed = new EmbedBuilder()
@@ -210,7 +197,7 @@ setInterval(async () => {
             }
         }
     }
-}, 5000);
+}, 3000);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
